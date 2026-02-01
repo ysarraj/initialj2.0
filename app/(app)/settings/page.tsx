@@ -9,7 +9,7 @@ import Input from '@/src/components/ui/Input';
 interface User {
   id: string;
   email: string;
-  name: string | null;
+  username: string | null;
   role: string;
   subscription?: {
     plan: string;

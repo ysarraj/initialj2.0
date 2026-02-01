@@ -5,8 +5,8 @@ import { canAccessLevel, getUserWithSubscription } from '@/src/lib/access';
 
 // Helper to check if a lesson is unlocked
 async function isLessonUnlocked(lessonLevel: number, userId: string): Promise<boolean> {
-  // Level 1 is always unlocked
-  if (lessonLevel === 1) return true;
+  // Level 0 (Hiragana & Katakana) is always unlocked
+  if (lessonLevel === 0) return true;
 
   // Find the previous lesson
   const previousLesson = await prisma.kanjiLesson.findFirst({
@@ -159,6 +159,7 @@ export async function GET(
         level: lesson.level,
         title: lesson.title,
         description: lesson.description,
+        lessonType: lesson.lessonType,
       },
       kanji: kanjiItems,
       vocabulary: vocabItems,

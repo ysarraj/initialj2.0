@@ -18,18 +18,20 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  username  String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  username      String?
+  usernameHidden Boolean  @default(false)
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   subscription  Subscription?
   kanjiProgress UserKanjiProgress[]
   vocabProgress UserVocabProgress[]
   settings      UserSettings?
+  weeklyXP      WeeklyXP[]
 
   @@index([email])
   @@index([role])
@@ -87,20 +89,28 @@ model Subscription {
 // KANJI LEARNING SYSTEM
 // =====================================
 
+enum LessonType {
+  HIRAGANA
+  KATAKANA
+  KANJI
+}
+
 model KanjiLesson {
-  id          String   @id @default(cuid())
-  level       Int      @unique // 1-100
+  id          String     @id @default(cuid())
+  level       Int        @unique // 1-100
   title       String // e.g., "Lesson 1: Basic Radicals"
   description String?
-  kanjiCount  Int      @default(0)
-  vocabCount  Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  lessonType  LessonType @default(KANJI) // Type of lesson: HIRAGANA, KATAKANA, or KANJI
+  kanjiCount  Int        @default(0)
+  vocabCount  Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   kanji      Kanji[]
   vocabulary Vocabulary[]
 
   @@index([level])
+  @@index([lessonType])
 }
 
 model Kanji {
@@ -273,4 +283,21 @@ model UserSettings {
   updatedAt         DateTime @updatedAt
 
   @@index([userId])
+}
+
+// Weekly XP tracking for leaderboard
+model WeeklyXP {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart DateTime // Monday of the week (ISO week)
+  weekEnd   DateTime // Sunday of the week
+  xp        Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@index([weekStart])
+  @@index([weekStart, xp])
 }

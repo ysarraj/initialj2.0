@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { getUserFromRequest } from '@/src/lib/auth';
 import { SRS_INTERVALS } from '@/src/lib/srs';
+import { addKanjiXP, addVocabXP, addWeeklyXP } from '@/src/lib/weekly-xp-service';
 
 const SRS_STAGE_NAMES = {
   0: 'Locked',
@@ -200,11 +201,13 @@ export async function POST(request: NextRequest) {
     const results = { kanji: 0, vocab: 0, skippedAhead: 0 };
 
     for (const item of items) {
-      const { id, type, firstAttemptCorrect } = item;
+      const { id, type, firstAttemptCorrect, questionCount } = item;
 
       // If user answered correctly on first attempt without any help,
       // they already know this item - start at Guru 1 (stage 5)
       const knownPrior = firstAttemptCorrect === true;
+      const normalizedQuestionCount =
+        typeof questionCount === 'number' && questionCount > 0 ? questionCount : 1;
       const startingStage = knownPrior ? 5 : 1;
       const nextReview = new Date(now.getTime() + SRS_INTERVALS[startingStage as keyof typeof SRS_INTERVALS]);
 
@@ -225,8 +228,48 @@ export async function POST(request: NextRequest) {
               readingCorrect: knownPrior ? 1 : 0,
             },
           });
+          
+          // Only add weekly XP for learning new kanji if NOT shortcutted
+          // Shortcutted items (knownPrior = true) don't get XP - they need to be reviewed first
+          if (!knownPrior) {
+            await addWeeklyXP(userId, normalizedQuestionCount * 10);
+          }
+          
           results.kanji++;
           if (knownPrior) results.skippedAhead++;
+        } else {
+          // Item already exists - treat as a review and give XP for correct answers
+          // Only give XP if NOT shortcutted (knownPrior = false means user answered correctly)
+          if (!knownPrior) {
+            // Simulate a review: increment correct counts and give XP
+            const oldMeaningCorrect = existing.meaningCorrect;
+            const oldReadingCorrect = existing.readingCorrect;
+            const newMeaningCorrect = oldMeaningCorrect + 1;
+            const newReadingCorrect =
+              oldReadingCorrect + (normalizedQuestionCount === 2 ? 1 : 0);
+            
+            // Update the progress
+            await prisma.userKanjiProgress.update({
+              where: { userId_kanjiId: { userId, kanjiId: id } },
+              data: {
+                meaningCorrect: newMeaningCorrect,
+                readingCorrect: newReadingCorrect,
+                lastReviewedAt: now,
+              },
+            });
+            
+            // Give XP for the review (10 XP per correct answer)
+            await addKanjiXP(
+              userId,
+              existing.srsStage, // oldStage
+              existing.srsStage, // newStage (doesn't change in lesson review)
+              oldMeaningCorrect, // oldMeaningCorrect
+              newMeaningCorrect, // newMeaningCorrect
+              oldReadingCorrect, // oldReadingCorrect
+              newReadingCorrect, // newReadingCorrect
+              false // isNewItem
+            );
+          }
         }
       } else if (type === 'vocab') {
         const existing = await prisma.userVocabProgress.findUnique({
@@ -245,8 +288,48 @@ export async function POST(request: NextRequest) {
               readingCorrect: knownPrior ? 1 : 0,
             },
           });
+          
+          // Only add weekly XP for learning new vocabulary if NOT shortcutted
+          // Shortcutted items (knownPrior = true) don't get XP - they need to be reviewed first
+          if (!knownPrior) {
+            await addWeeklyXP(userId, normalizedQuestionCount * 10);
+          }
+          
           results.vocab++;
           if (knownPrior) results.skippedAhead++;
+        } else {
+          // Item already exists - treat as a review and give XP for correct answers
+          // Only give XP if NOT shortcutted (knownPrior = false means user answered correctly)
+          if (!knownPrior) {
+            // Simulate a review: increment correct counts and give XP
+            const oldMeaningCorrect = existing.meaningCorrect;
+            const oldReadingCorrect = existing.readingCorrect;
+            const newMeaningCorrect = oldMeaningCorrect + 1;
+            const newReadingCorrect =
+              oldReadingCorrect + (normalizedQuestionCount === 2 ? 1 : 0);
+            
+            // Update the progress
+            await prisma.userVocabProgress.update({
+              where: { userId_vocabularyId: { userId, vocabularyId: id } },
+              data: {
+                meaningCorrect: newMeaningCorrect,
+                readingCorrect: newReadingCorrect,
+                lastReviewedAt: now,
+              },
+            });
+            
+            // Give XP for the review (10 XP per correct answer)
+            await addVocabXP(
+              userId,
+              existing.srsStage, // oldStage
+              existing.srsStage, // newStage (doesn't change in lesson review)
+              oldMeaningCorrect, // oldMeaningCorrect
+              newMeaningCorrect, // newMeaningCorrect
+              oldReadingCorrect, // oldReadingCorrect
+              newReadingCorrect, // newReadingCorrect
+              false // isNewItem
+            );
+          }
         }
       }
     }

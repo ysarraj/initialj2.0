@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '@/src/lib/auth';
 import { createPortalSession } from '@/src/lib/stripe';
-import prisma from '@/src/lib/db';
+import { prisma } from '@/src/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: authUser.userId },
+      where: { id: authUser.id },
       include: { subscription: true },
     });
 

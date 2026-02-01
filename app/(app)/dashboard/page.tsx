@@ -6,6 +6,35 @@ import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import Link from 'next/link';
 
+/**
+ * Get current day of week in CET (Central European Time)
+ * Uses Europe/Paris timezone which is CET/CEST
+ */
+function getDayOfWeekCET(): number {
+  const now = new Date();
+  // Use Intl.DateTimeFormat to get the day in CET timezone
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Paris',
+    weekday: 'long',
+  });
+  const dayName = formatter.format(now);
+  // Convert day name to number (Sunday = 0, Monday = 1, etc.)
+  const dayMap: Record<string, number> = {
+    'Sunday': 0,
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6,
+  };
+  return dayMap[dayName] ?? 0;
+}
+
+function isSundayCET(): boolean {
+  return getDayOfWeekCET() === 0; // 0 = Sunday
+}
+
 interface StageData {
   stage: number;
   name: string;
@@ -159,6 +188,12 @@ export default function DashboardPage() {
             <span className="text-dark-900"> Dashboard</span>
           </h1>
           <p className="text-lg text-dark-600 font-light">Master Japanese kanji and vocabulary with spaced repetition</p>
+          {isSundayCET() && (
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full font-medium text-sm animate-pulse-slow">
+              <span>🎉</span>
+              <span>Double XP Day! All XP earned today (until midnight CET) is doubled</span>
+            </div>
+          )}
         </div>
         {progress && progress.pendingReviews.total > 0 && (
           <Link href="/reviews">

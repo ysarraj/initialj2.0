@@ -82,6 +82,111 @@ async function seedAdmin() {
   return admin;
 }
 
+async function seedHiraganaKatakana() {
+  console.log('Seeding Hiragana & Katakana lesson...\n');
+
+  // Check if hiragana/katakana lesson already exists
+  const existing = await prisma.kanjiLesson.findFirst({
+    where: { 
+      OR: [
+        { lessonType: 'HIRAGANA' },
+        { lessonType: 'KATAKANA' }
+      ]
+    },
+  });
+
+  if (existing) {
+    console.log('Hiragana & Katakana lesson already exists, skipping.\n');
+    return;
+  }
+
+  // Check if level 0 is already taken - if so, shift all kanji lessons up by 1
+  const level0Lesson = await prisma.kanjiLesson.findUnique({
+    where: { level: 0 },
+  });
+
+  if (level0Lesson && level0Lesson.lessonType === 'KANJI') {
+    console.log('Shifting existing kanji lessons to make room for hiragana/katakana...\n');
+    // Get all kanji lessons ordered by level
+    const kanjiLessons = await prisma.kanjiLesson.findMany({
+      where: { lessonType: 'KANJI' },
+      orderBy: { level: 'desc' },
+    });
+
+    // Shift each lesson up by 1 level
+    for (const lesson of kanjiLessons) {
+      await prisma.kanjiLesson.update({
+        where: { id: lesson.id },
+        data: { level: lesson.level + 1 },
+      });
+    }
+    console.log(`Shifted ${kanjiLessons.length} kanji lessons up by 1 level.\n`);
+  }
+
+  // Hiragana characters with romaji
+  const hiragana = [
+    { char: 'あ', romaji: 'a' }, { char: 'い', romaji: 'i' }, { char: 'う', romaji: 'u' }, { char: 'え', romaji: 'e' }, { char: 'お', romaji: 'o' },
+    { char: 'か', romaji: 'ka' }, { char: 'き', romaji: 'ki' }, { char: 'く', romaji: 'ku' }, { char: 'け', romaji: 'ke' }, { char: 'こ', romaji: 'ko' },
+    { char: 'さ', romaji: 'sa' }, { char: 'し', romaji: 'shi' }, { char: 'す', romaji: 'su' }, { char: 'せ', romaji: 'se' }, { char: 'そ', romaji: 'so' },
+    { char: 'た', romaji: 'ta' }, { char: 'ち', romaji: 'chi' }, { char: 'つ', romaji: 'tsu' }, { char: 'て', romaji: 'te' }, { char: 'と', romaji: 'to' },
+    { char: 'な', romaji: 'na' }, { char: 'に', romaji: 'ni' }, { char: 'ぬ', romaji: 'nu' }, { char: 'ね', romaji: 'ne' }, { char: 'の', romaji: 'no' },
+    { char: 'は', romaji: 'ha' }, { char: 'ひ', romaji: 'hi' }, { char: 'ふ', romaji: 'fu' }, { char: 'へ', romaji: 'he' }, { char: 'ほ', romaji: 'ho' },
+    { char: 'ま', romaji: 'ma' }, { char: 'み', romaji: 'mi' }, { char: 'む', romaji: 'mu' }, { char: 'め', romaji: 'me' }, { char: 'も', romaji: 'mo' },
+    { char: 'や', romaji: 'ya' }, { char: 'ゆ', romaji: 'yu' }, { char: 'よ', romaji: 'yo' },
+    { char: 'ら', romaji: 'ra' }, { char: 'り', romaji: 'ri' }, { char: 'る', romaji: 'ru' }, { char: 'れ', romaji: 're' }, { char: 'ろ', romaji: 'ro' },
+    { char: 'わ', romaji: 'wa' }, { char: 'を', romaji: 'wo' }, { char: 'ん', romaji: 'n' },
+    // Dakuten (voiced)
+    { char: 'が', romaji: 'ga' }, { char: 'ぎ', romaji: 'gi' }, { char: 'ぐ', romaji: 'gu' }, { char: 'げ', romaji: 'ge' }, { char: 'ご', romaji: 'go' },
+    { char: 'ざ', romaji: 'za' }, { char: 'じ', romaji: 'ji' }, { char: 'ず', romaji: 'zu' }, { char: 'ぜ', romaji: 'ze' }, { char: 'ぞ', romaji: 'zo' },
+    { char: 'だ', romaji: 'da' }, { char: 'ぢ', romaji: 'ji' }, { char: 'づ', romaji: 'zu' }, { char: 'で', romaji: 'de' }, { char: 'ど', romaji: 'do' },
+    { char: 'ば', romaji: 'ba' }, { char: 'び', romaji: 'bi' }, { char: 'ぶ', romaji: 'bu' }, { char: 'べ', romaji: 'be' }, { char: 'ぼ', romaji: 'bo' },
+    // Handakuten (half-voiced)
+    { char: 'ぱ', romaji: 'pa' }, { char: 'ぴ', romaji: 'pi' }, { char: 'ぷ', romaji: 'pu' }, { char: 'ぺ', romaji: 'pe' }, { char: 'ぽ', romaji: 'po' },
+    // Yōon (contracted sounds)
+    { char: 'きゃ', romaji: 'kya' }, { char: 'きゅ', romaji: 'kyu' }, { char: 'きょ', romaji: 'kyo' },
+    { char: 'しゃ', romaji: 'sha' }, { char: 'しゅ', romaji: 'shu' }, { char: 'しょ', romaji: 'sho' },
+    { char: 'ちゃ', romaji: 'cha' }, { char: 'ちゅ', romaji: 'chu' }, { char: 'ちょ', romaji: 'cho' },
+    { char: 'にゃ', romaji: 'nya' }, { char: 'にゅ', romaji: 'nyu' }, { char: 'にょ', romaji: 'nyo' },
+    { char: 'ひゃ', romaji: 'hya' }, { char: 'ひゅ', romaji: 'hyu' }, { char: 'ひょ', romaji: 'hyo' },
+    { char: 'みゃ', romaji: 'mya' }, { char: 'みゅ', romaji: 'myu' }, { char: 'みょ', romaji: 'myo' },
+    { char: 'りゃ', romaji: 'rya' }, { char: 'りゅ', romaji: 'ryu' }, { char: 'りょ', romaji: 'ryo' },
+    { char: 'ぎゃ', romaji: 'gya' }, { char: 'ぎゅ', romaji: 'gyu' }, { char: 'ぎょ', romaji: 'gyo' },
+    { char: 'じゃ', romaji: 'ja' }, { char: 'じゅ', romaji: 'ju' }, { char: 'じょ', romaji: 'jo' },
+    { char: 'びゃ', romaji: 'bya' }, { char: 'びゅ', romaji: 'byu' }, { char: 'びょ', romaji: 'byo' },
+    { char: 'ぴゃ', romaji: 'pya' }, { char: 'ぴゅ', romaji: 'pyu' }, { char: 'ぴょ', romaji: 'pyo' },
+    // Small tsu
+    { char: 'っ', romaji: 'tsu' },
+  ];
+
+  const lesson = await prisma.kanjiLesson.create({
+    data: {
+      level: 0,
+      title: 'Hiragana',
+      description: 'Learn the hiragana syllabary - the foundation of Japanese writing',
+      lessonType: 'HIRAGANA',
+      kanjiCount: 0,
+      vocabCount: hiragana.length,
+    },
+  });
+
+  for (let i = 0; i < hiragana.length; i++) {
+    const h = hiragana[i];
+    await prisma.vocabulary.create({
+      data: {
+        word: h.char,
+        lessonId: lesson.id,
+        reading: h.romaji,
+        meanings: jsonField([h.romaji]) as string,
+        primaryMeaning: h.romaji,
+        sortOrder: i,
+      },
+    });
+  }
+
+  console.log(`Created Hiragana lesson with ${hiragana.length} characters\n`);
+}
+
+
 async function seedKanji() {
   const DATA_FILE = path.join(__dirname, 'data', 'jlpt-levels.json');
 
@@ -94,7 +199,9 @@ async function seedKanji() {
 
   // Check if already seeded (skip unless SEED_KANJI_FORCE=1)
   const force = process.env.SEED_KANJI_FORCE === '1' || process.env.SEED_KANJI_FORCE === 'true';
-  const existingCount = await prisma.kanjiLesson.count().catch(() => 0);
+  const existingCount = await prisma.kanjiLesson.count({
+    where: { lessonType: 'KANJI' },
+  }).catch(() => 0);
 
   if (!force && existingCount > 0) {
     console.log(`Kanji already seeded (${existingCount} lessons), skipping.`);
@@ -102,16 +209,22 @@ async function seedKanji() {
     return;
   }
 
-  if (force && existingCount > 0) {
+  if (force) {
     console.log('Clearing existing kanji data (SEED_KANJI_FORCE=1)...');
+    // First delete all related data
     await prisma.userVocabProgress.deleteMany().catch(() => {});
     await prisma.userKanjiProgress.deleteMany().catch(() => {});
     await prisma.userSettings.deleteMany().catch(() => {});
     await prisma.kanjiVocabulary.deleteMany().catch(() => {});
-    await prisma.vocabulary.deleteMany().catch(() => {});
+    await prisma.vocabulary.deleteMany({
+      where: { lesson: { lessonType: 'KANJI' } },
+    }).catch(() => {});
     await prisma.kanji.deleteMany().catch(() => {});
-    await prisma.kanjiLesson.deleteMany().catch(() => {});
-    console.log('Cleared.\n');
+    // Clear all kanji lessons - delete by level range to be safe (levels 1-100)
+    const deleted = await prisma.kanjiLesson.deleteMany({
+      where: { level: { gte: 1, lte: 100 } },
+    }).catch(() => ({ count: 0 }));
+    console.log(`Cleared ${deleted.count || 0} kanji lessons.\n`);
   }
 
   console.log('Starting JLPT Kanji + Vocabulary seeding...\n');
@@ -132,12 +245,13 @@ async function seedKanji() {
   const vocabMap = new Map<string, { id: string; lessonId: string }>();
 
   for (const level of levels) {
-    // Create the lesson
+    // Create the lesson (kanji lessons are 1-100, hiragana/katakana is 0)
     const lesson = await prisma.kanjiLesson.create({
       data: {
-        level: level.level,
+        level: level.level, // Kanji lessons are 1-100 (hiragana/katakana is at 0)
         title: level.title,
         description: level.description,
+        lessonType: 'KANJI',
         kanjiCount: level.kanji.length,
         vocabCount: level.vocabulary.length,
       },
@@ -248,6 +362,7 @@ async function main() {
   console.log('========================================\n');
 
   await seedAdmin();
+  await seedHiraganaKatakana();
   await seedKanji();
 
   console.log('\n========================================');

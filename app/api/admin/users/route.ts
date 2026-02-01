@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
         id: true,
         email: true,
         username: true,
+        usernameHidden: true,
         role: true,
         createdAt: true,
         subscription: {

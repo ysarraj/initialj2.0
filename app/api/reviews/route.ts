@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { getUserFromRequest } from '@/src/lib/auth';
 import { canAccessLevel, getUserWithSubscription } from '@/src/lib/access';
-import { SRS_INTERVALS } from '@/src/lib/srs';
+import { SRS_INTERVALS, SRS_STAGE_NAMES } from '@/src/lib/srs';
+import { addKanjiXP, addVocabXP } from '@/src/lib/weekly-xp-service';
 
 const SRS_STAGE_NAMES = {
   0: 'Locked',
@@ -206,10 +207,30 @@ export async function POST(request: NextRequest) {
         updateData.nextReviewAt = new Date(now.getTime() + interval);
       }
 
+      // Calculate new correct counts
+      const newMeaningCorrect = questionType === 'meaning' && correct
+        ? progress.meaningCorrect + 1
+        : progress.meaningCorrect;
+      const newReadingCorrect = questionType === 'reading' && correct
+        ? progress.readingCorrect + 1
+        : progress.readingCorrect;
+
       await prisma.userKanjiProgress.update({
         where: { id: progressId },
         data: updateData,
       });
+
+      // Add weekly XP for the progress made
+      await addKanjiXP(
+        userId,
+        progress.srsStage, // oldStage
+        newStage, // newStage
+        progress.meaningCorrect, // oldMeaningCorrect
+        newMeaningCorrect, // newMeaningCorrect
+        progress.readingCorrect, // oldReadingCorrect
+        newReadingCorrect, // newReadingCorrect
+        false // isNewItem
+      );
 
       return NextResponse.json({
         success: true,
@@ -262,10 +283,30 @@ export async function POST(request: NextRequest) {
         updateData.nextReviewAt = new Date(now.getTime() + interval);
       }
 
+      // Calculate new correct counts
+      const newMeaningCorrect = questionType === 'meaning' && correct
+        ? progress.meaningCorrect + 1
+        : progress.meaningCorrect;
+      const newReadingCorrect = questionType === 'reading' && correct
+        ? progress.readingCorrect + 1
+        : progress.readingCorrect;
+
       await prisma.userVocabProgress.update({
         where: { id: progressId },
         data: updateData,
       });
+
+      // Add weekly XP for the progress made
+      await addVocabXP(
+        userId,
+        progress.srsStage, // oldStage
+        newStage, // newStage
+        progress.meaningCorrect, // oldMeaningCorrect
+        newMeaningCorrect, // newMeaningCorrect
+        progress.readingCorrect, // oldReadingCorrect
+        newReadingCorrect, // newReadingCorrect
+        false // isNewItem
+      );
 
       return NextResponse.json({
         success: true,

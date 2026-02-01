@@ -1,3 +1,7 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/src/components/layout/Header';
 import Footer from '@/src/components/layout/Footer';
@@ -12,6 +16,47 @@ const JLPT_LEVELS = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setIsLoggedIn(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          setIsLoggedIn(true);
+        } else {
+          localStorage.removeItem('auth_token');
+          setIsLoggedIn(false);
+        }
+      } catch (error) {
+        setIsLoggedIn(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleStartLearning = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isLoggedIn) {
+      router.push('/dashboard');
+    } else {
+      router.push('/register');
+    }
+  };
+
   return (
     <main className="min-h-screen bg-white">
       <Header />
@@ -38,12 +83,18 @@ export default function HomePage() {
             Learn kanji and relevant vocabulary for each JLPT level through spaced repetition. Currently in beta - all levels are free.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fadeIn">
-            <Link href="/register">
-              <Button size="lg" className="px-8 py-4 text-lg animate-pulse-slow">Start Learning</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="ghost" size="lg" className="px-8 py-4 text-lg">Log in</Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="px-8 py-4 text-lg animate-pulse-slow"
+              onClick={handleStartLearning}
+            >
+              Start Learning
+            </Button>
+            {!isLoggedIn && (
+              <Link href="/login">
+                <Button variant="ghost" size="lg" className="px-8 py-4 text-lg">Log in</Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -105,11 +156,20 @@ export default function HomePage() {
           <p className="text-lg text-dark-600 mb-12 font-light max-w-2xl mx-auto">
             Select your JLPT level, choose your pace, and begin your journey to Japanese mastery with kanji and vocabulary.
           </p>
-          <Link href="/register">
-            <Button size="lg" className="px-10 py-5 text-lg">
-              Get Started
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="px-10 py-5 text-lg"
+            onClick={(e) => {
+              e.preventDefault();
+              if (isLoggedIn) {
+                router.push('/dashboard');
+              } else {
+                router.push('/register');
+              }
+            }}
+          >
+            Get Started
+          </Button>
         </div>
       </section>
 

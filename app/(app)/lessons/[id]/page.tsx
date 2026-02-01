@@ -32,7 +32,7 @@ interface VocabItem {
 }
 
 interface LessonData {
-  lesson: { id: string; level: number; title: string; description: string };
+  lesson: { id: string; level: number; title: string; description: string; lessonType: 'HIRAGANA' | 'KATAKANA' | 'KANJI' };
   kanji: KanjiItem[];
   vocabulary: VocabItem[];
 }
@@ -228,12 +228,17 @@ export default function LessonPage() {
     items.sort(() => Math.random() - 0.5);
 
     const questionsArr: StudyQuestion[] = [];
+    const isKanaLesson = data.lesson.lessonType === 'HIRAGANA' || data.lesson.lessonType === 'KATAKANA';
+    
     items.forEach(item => {
       const isVocab = item.type === 'vocab';
       const vocabWord = isVocab ? (item as VocabItem & { type: 'vocab' }).word : '';
       const isKanaOnly = isVocab && !containsKanji(vocabWord);
 
-      if (isKanaOnly) {
+      // For hiragana/katakana lessons, only generate reading questions
+      if (isKanaLesson) {
+        questionsArr.push({ item, questionType: 'reading' });
+      } else if (isKanaOnly) {
         questionsArr.push({ item, questionType: 'meaning' });
       } else {
         const meaningFirst = Math.random() < 0.5;
@@ -347,6 +352,10 @@ export default function LessonPage() {
     if (!userAns) return false;
 
     if (qType === 'meaning') {
+      // Meaning questions don't exist for hiragana/katakana lessons
+      if (data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') {
+        return false;
+      }
       const meanings = item.type === 'kanji' ? (item as KanjiItem).meanings : (item as VocabItem).meanings;
       for (const meaning of meanings) {
         const correctAns = meaning.toLowerCase().trim();
@@ -356,8 +365,9 @@ export default function LessonPage() {
       }
       return false;
     } else {
-      const cleanAnswer = userAns.replace(/[.\s\-～〜]/g, '');
+      // For reading questions
       if (item.type === 'kanji') {
+        const cleanAnswer = userAns.replace(/[.\s\-～〜]/g, '');
         const kanjiItem = item as KanjiItem;
         const allReadings = [...kanjiItem.kunYomi, ...kanjiItem.onYomi];
         return allReadings.some(r => {
@@ -366,13 +376,25 @@ export default function LessonPage() {
           return cleanReading === cleanAnswer || hiraganaReading === cleanAnswer;
         });
       } else {
+        // For vocab items (including hiragana/katakana)
         const vocabItem = item as VocabItem;
-        const cleanReading = vocabItem.reading.replace(/[.\s\-～〜]/g, '').toLowerCase();
-        const hiraganaReading = katakanaToHiragana(cleanReading);
-        return cleanReading === cleanAnswer || hiraganaReading === cleanAnswer;
+        const isKanaLesson = data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA';
+        
+        if (isKanaLesson) {
+          // For kana lessons, reading field contains romaji, so compare romaji directly
+          const cleanAnswer = userAns.toLowerCase().trim();
+          const cleanReading = vocabItem.reading.toLowerCase().trim();
+          return cleanReading === cleanAnswer;
+        } else {
+          // For regular vocab, compare kana readings
+          const cleanAnswer = userAns.replace(/[.\s\-～〜]/g, '');
+          const cleanReading = vocabItem.reading.replace(/[.\s\-～〜]/g, '').toLowerCase();
+          const hiraganaReading = katakanaToHiragana(cleanReading);
+          return cleanReading === cleanAnswer || hiraganaReading === cleanAnswer;
+        }
       }
     }
-  }, []);
+  }, [data]);
 
   const submitAnswer = useCallback(() => {
     if (!questions[currentIndex]) return;
@@ -399,7 +421,8 @@ export default function LessonPage() {
     }
   }, [questions, currentIndex, userAnswer, checkAnswer]);
 
-  const markItemStudied = useCallback(async (item: StudyItem, firstAttemptCorrect: boolean) => {
+  const markItemStudied = useCallback(
+    async (item: StudyItem, firstAttemptCorrect: boolean, questionCount: number) => {
     const token = getAuthToken();
     if (!token) return;
 
@@ -411,7 +434,14 @@ export default function LessonPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          items: [{ id: item.id, type: item.type, firstAttemptCorrect }],
+          items: [
+            {
+              id: item.id,
+              type: item.type,
+              firstAttemptCorrect,
+              questionCount,
+            },
+          ],
         }),
       });
 
@@ -432,7 +462,9 @@ export default function LessonPage() {
     } catch (err) {
       console.error('Failed to mark item as studied:', err);
     }
-  }, [data]);
+    },
+    [data]
+  );
 
   const nextItem = useCallback(async () => {
     if (questions.length === 0) return;
@@ -455,24 +487,35 @@ export default function LessonPage() {
     const meaningKey = `${currentItem.id}-meaning`;
     const readingKey = `${currentItem.id}-reading`;
     const hasReadingQuestion = questions.some(q => q.item.id === currentItem.id && q.questionType === 'reading');
-    const itemComplete = hasReadingQuestion
-      ? (newAnswered.has(meaningKey) && newAnswered.has(readingKey))
-      : newAnswered.has(meaningKey);
+    const hasMeaningQuestion = questions.some(q => q.item.id === currentItem.id && q.questionType === 'meaning');
+    const isKanaLesson = data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA';
+    
+    // For kana lessons, only reading questions exist, so item is complete when reading is answered
+    // For other lessons, check both meaning and reading if both exist
+    const itemComplete = isKanaLesson
+      ? newAnswered.has(readingKey)
+      : hasReadingQuestion && hasMeaningQuestion
+        ? (newAnswered.has(meaningKey) && newAnswered.has(readingKey))
+        : newAnswered.has(meaningKey);
 
     if (itemComplete) {
-      const allQuestionsFirstAttempt = hasReadingQuestion
-        ? (newFirstAttempt.has(meaningKey) && newFirstAttempt.has(readingKey))
-        : newFirstAttempt.has(meaningKey);
+      const allQuestionsFirstAttempt = isKanaLesson
+        ? newFirstAttempt.has(readingKey)
+        : hasReadingQuestion && hasMeaningQuestion
+          ? (newFirstAttempt.has(meaningKey) && newFirstAttempt.has(readingKey))
+          : newFirstAttempt.has(meaningKey);
 
-      await markItemStudied(currentItem, allQuestionsFirstAttempt);
+      const questionCount = hasReadingQuestion ? 2 : 1;
+      await markItemStudied(currentItem, allQuestionsFirstAttempt, questionCount);
       setStreak(prev => prev + 1);
 
-      if (allQuestionsFirstAttempt) {
-        setXpEarned(prev => prev + 10);
+      // Only add XP if NOT shortcutted (firstAttemptCorrect = false)
+      // Shortcutted items don't get XP - they need to be reviewed first
+      if (!allQuestionsFirstAttempt) {
+        // Give 10 XP per learning question (meaning and/or reading)
+        setXpEarned(prev => prev + questionCount * 10);
       }
     }
-
-    setXpEarned(prev => prev + 5);
     setShowMeaning(false);
     setShowReading(false);
     setShowHint(false);
@@ -542,7 +585,8 @@ export default function LessonPage() {
       newAnswered.add(`${item.id}-reading`);
       setAnsweredQuestions(newAnswered);
 
-      setXpEarned(prev => prev + 15);
+      // Don't give XP for manual burning - only real burning through reviews gives XP
+      // setXpEarned(prev => prev + 15);
       setStreak(prev => prev + 1);
 
       let nextIdx = currentIndex + 1;
@@ -859,10 +903,12 @@ export default function LessonPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-1 text-sm font-medium text-orange-500">
-            <span>⚡</span>
-            <span>{xpEarned}</span>
-          </div>
+          {xpEarned > 0 && (
+            <div className="flex items-center gap-1 text-sm font-medium text-orange-500">
+              <span>⚡</span>
+              <span>{xpEarned}</span>
+            </div>
+          )}
         </div>
 
         <div
@@ -888,12 +934,15 @@ export default function LessonPage() {
                 {isKanji ? kanjiItem?.character : vocabItem?.word}
               </div>
 
-              {answerState === 'correct' ? (
+                  {answerState === 'correct' ? (
                 <div className="text-center animate-fadeIn w-full">
                   <div className="mb-4 text-green-500 font-medium">Correct!</div>
-                  <div className="text-3xl font-bold mb-2">
-                    {isKanji ? kanjiItem?.primaryMeaning : vocabItem?.primaryMeaning}
-                  </div>
+                  {/* For kana lessons, don't show meaning - only show romaji */}
+                  {!(data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') && (
+                    <div className="text-3xl font-bold mb-2">
+                      {isKanji ? kanjiItem?.primaryMeaning : vocabItem?.primaryMeaning}
+                    </div>
+                  )}
 
                   <div className="mt-4 p-4 bg-gray-50 rounded-xl">
                     {isKanji && kanjiItem ? (
@@ -913,8 +962,12 @@ export default function LessonPage() {
                       </div>
                     ) : vocabItem ? (
                       <div>
-                        <div className="text-xs uppercase tracking-wider text-purple-500 mb-1 font-medium">Reading</div>
-                        <div className="text-2xl font-japanese">{vocabItem.reading}</div>
+                        <div className="text-xs uppercase tracking-wider text-purple-500 mb-1 font-medium">
+                          {(data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') ? 'Romaji' : 'Reading'}
+                        </div>
+                        <div className={`text-2xl ${(data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') ? 'font-mono' : 'font-japanese'}`}>
+                          {vocabItem.reading}
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -945,8 +998,12 @@ export default function LessonPage() {
                           </div>
                         ) : vocabItem ? (
                           <div className="text-center">
-                            <div className="text-[10px] uppercase tracking-wider text-purple-500 mb-1">Reading</div>
-                            <div className="text-lg font-japanese">{vocabItem.reading}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-purple-500 mb-1">
+                              {(data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') ? 'Romaji' : 'Reading'}
+                            </div>
+                            <div className={`text-lg ${(data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') ? 'font-mono' : 'font-japanese'}`}>
+                              {vocabItem.reading}
+                            </div>
                           </div>
                         ) : null
                       ) : (
@@ -1015,6 +1072,17 @@ export default function LessonPage() {
                   <div className="mt-2 text-xs text-gray-400 text-center">
                     Press Enter to submit
                   </div>
+                  {/* Special character help for hiragana/katakana lessons */}
+                  {(data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA') && questionType === 'reading' && (
+                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
+                      <div className="font-medium mb-1">💡 Typing Tips:</div>
+                      <ul className="list-disc list-inside space-y-0.5 text-left">
+                        <li>Small yu (じゅ): type &quot;ju&quot; or &quot;zyu&quot;</li>
+                        <li>Double ん: type &quot;nn&quot;</li>
+                        <li>Small tsu (って): type &quot;tte&quot; or &quot;tt&quot;</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -1,14 +1,14 @@
 import React from 'react';
 import { cn } from '@/src/lib/utils';
 
-export interface CardProps {
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   padding?: 'sm' | 'md' | 'lg' | 'none';
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ children, className, padding = 'md' }, ref) => {
+  ({ children, className, padding = 'md', style, ...props }, ref) => {
     const paddingStyles = {
       none: '',
       sm: 'p-4',
@@ -24,6 +24,8 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
           paddingStyles[padding],
           className
         )}
+        style={style}
+        {...props}
       >
         {children}
       </div>

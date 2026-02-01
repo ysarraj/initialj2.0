@@ -88,9 +88,9 @@ export async function GET(request: NextRequest) {
       const progress = totalItems > 0 ? Math.round((learnedItems / totalItems) * 100) : 0;
       const isComplete = learnedItems >= totalItems && totalItems > 0;
 
-      // Level 1 is always unlocked, others require previous level to be complete
+      // Level 0 (Hiragana & Katakana) is always unlocked, others require previous level to be complete
       const previousLesson = i > 0 ? lessonsWithProgress[i - 1] : null;
-      const isUnlocked = lesson.level === 1 || (previousLesson?.isComplete ?? false);
+      const isUnlocked = lesson.level === 0 || (previousLesson?.isComplete ?? false);
 
       // Check if user can access this level based on subscription
       const isAccessible = canAccessLevel(userWithSub, lesson.level);

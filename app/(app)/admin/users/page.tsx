@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/src/components/ui/Card';
+import Button from '@/src/components/ui/Button';
+import { getDisplayUsername } from '@/src/lib/username';
 
 interface User {
   id: string;
   email: string;
   username: string | null;
+  usernameHidden: boolean;
   role: string;
   createdAt: string;
   subscription: {
@@ -81,6 +84,38 @@ export default function AdminUsersPage() {
     });
   };
 
+  const toggleUsernameVisibility = async (userId: string, currentHidden: boolean) => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/hide-username`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ hidden: !currentHidden }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update username visibility');
+      }
+
+      // Refresh users list
+      const usersRes = await fetch('/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(usersData.users);
+      }
+    } catch (error) {
+      console.error('Error toggling username visibility:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -112,6 +147,9 @@ export default function AdminUsersPage() {
                     Username
                   </th>
                   <th className="text-left py-4 px-4 text-sm font-light uppercase tracking-wide text-dark-600">
+                    Actions
+                  </th>
+                  <th className="text-left py-4 px-4 text-sm font-light uppercase tracking-wide text-dark-600">
                     Role
                   </th>
                   <th className="text-left py-4 px-4 text-sm font-light uppercase tracking-wide text-dark-600">
@@ -132,7 +170,20 @@ export default function AdminUsersPage() {
                       {u.email}
                     </td>
                     <td className="py-4 px-4 text-sm text-dark-600 font-light">
-                      {u.username || '—'}
+                      {getDisplayUsername(u.username, u.usernameHidden, u.id)}
+                      {u.usernameHidden && (
+                        <span className="ml-2 text-xs text-orange-600">(Hidden)</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleUsernameVisibility(u.id, u.usernameHidden)}
+                        className="text-xs"
+                      >
+                        {u.usernameHidden ? 'Show' : 'Hide'}
+                      </Button>
                     </td>
                     <td className="py-4 px-4">
                       <span className={`text-xs font-light tracking-wide uppercase px-3 py-1 ${

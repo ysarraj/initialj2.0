@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         cancelAtPeriodEnd: true,
-        currentPeriodEnd: updatedSub.current_period_end
-          ? new Date(updatedSub.current_period_end * 1000)
+        currentPeriodEnd: (updatedSub as any).current_period_end
+          ? new Date((updatedSub as any).current_period_end * 1000)
           : null,
       });
     }

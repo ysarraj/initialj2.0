@@ -71,6 +71,7 @@ export default function Header({ user: propUser = null, onLogout: propOnLogout }
   const navItems = [
     { href: '/', label: 'Homepage' },
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/about', label: 'About' },
   ];
 
