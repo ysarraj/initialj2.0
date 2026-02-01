@@ -1,0 +1,423 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"  // ✅ MariaDB utilise le provider mysql
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// MULTI-TENANT & CORRIDORS
+// ================================
+
+model ImportCorridor {
+  id                String   @id @default(cuid())
+  name              String   @db.VarChar(100)
+  originCountry     String   @map("origin_country") @db.Char(2)
+  destinationCountry String  @map("destination_country") @db.Char(2)
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  organizations     Organization[]
+  documentTemplates DocumentTemplate[]
+  orderPipeline     OrderStatusPipeline[]
+  
+  @@map("import_corridors")
+}
+
+model Organization {
+  id                    String       @id @default(cuid())
+  corridorId            String       @map("corridor_id")
+  name                  String       @db.VarChar(255)
+  slug                  String       @unique @db.VarChar(100)
+  domain                String?      @unique @db.VarChar(255)
+  logo                  String?      @db.Text
+  primaryColor          String       @default("#ef4444") @map("primary_color") @db.VarChar(7)
+  defaultDepositType    DepositType  @default(PERCENTAGE) @map("default_deposit_type")
+  defaultDepositValue   Decimal      @default(10.00) @map("default_deposit_value") @db.Decimal(10,2)
+  defaultCurrency       String       @default("USD") @map("default_currency") @db.Char(3)
+  phone                 String?      @db.VarChar(20)
+  email                 String?      @db.VarChar(255)
+  address               String?      @db.Text
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+  
+  // Relations
+  corridor              ImportCorridor @relation(fields: [corridorId], references: [id])
+  users                 User[]
+  vehicles              Vehicle[]
+  orders                Order[]
+  
+  @@map("organizations")
+}
+
+// ================================
+// USERS & AUTHENTICATION
+// ================================
+
+model User {
+  id             String        @id @default(cuid())
+  organizationId String?       @map("organization_id")
+  email          String        @unique @db.VarChar(255)
+  password       String        @db.VarChar(255)
+  firstName      String?       @map("first_name") @db.VarChar(100)
+  lastName       String?       @map("last_name") @db.VarChar(100)
+  phone          String?       @db.VarChar(20)
+  role           UserRole      @default(CLIENT)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  orders         Order[]
+  favorites      VehicleFavorite[]
+  searchRequests SearchRequest[]
+  
+  @@map("users")
+}
+
+// ================================
+// VEHICLES & INVENTORY
+// ================================
+
+model Vehicle {
+  id               String            @id @default(cuid())
+  organizationId   String            @map("organization_id")
+  make             String            @db.VarChar(50)
+  model            String            @db.VarChar(100)
+  variant          String?           @db.VarChar(100)
+  year             Int
+  chassisCode      String?           @map("chassis_code") @db.VarChar(20)
+  engineCode       String?           @map("engine_code") @db.VarChar(20)
+  transmission     TransmissionType
+  drivetrain       DrivetrainType
+  exterior         String?           @db.VarChar(50)
+  interior         String?           @db.VarChar(50)
+  mileage          Int?
+  condition        VehicleCondition
+  auctionHouse     String?           @map("auction_house") @db.VarChar(100)
+  auctionGrade     String?           @map("auction_grade") @db.VarChar(10)
+  lotNumber        String?           @map("lot_number") @db.VarChar(50)
+  auctionDate      DateTime?         @map("auction_date")
+  costJPY          Decimal?          @map("cost_jpy") @db.Decimal(12,2)
+  costUSD          Decimal?          @map("cost_usd") @db.Decimal(12,2)
+  sellPriceUSD     Decimal           @map("sell_price_usd") @db.Decimal(12,2)
+  depositType      DepositType       @default(PERCENTAGE) @map("deposit_type")
+  depositValue     Decimal           @map("deposit_value") @db.Decimal(10,2)
+  allowFullPayment Boolean           @default(true) @map("allow_full_payment")
+  status           VehicleStatus     @default(SOURCING)
+  isPublic         Boolean           @default(true) @map("is_public")
+  description      String?           @db.Text
+  notes            String?           @db.Text
+  viewCount        Int               @default(0) @map("view_count")
+  shareCount       Int               @default(0) @map("share_count")
+  favoriteCount    Int               @default(0) @map("favorite_count")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  soldAt           DateTime?         @map("sold_at")
+  
+  // Relations
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  images           VehicleImage[]
+  documents        VehicleDocument[]
+  orders           Order[]
+  favorites        VehicleFavorite[]
+  
+  @@map("vehicles")
+}
+
+model VehicleImage {
+  id           String   @id @default(cuid())
+  vehicleId    String   @map("vehicle_id")
+  originalUrl  String   @map("original_url") @db.Text
+  optimizedUrl String?  @map("optimized_url") @db.Text
+  thumbnailUrl String?  @map("thumbnail_url") @db.Text
+  alt          String?  @db.VarChar(255)
+  caption      String?  @db.VarChar(500)
+  order        Int      @default(0)
+  width        Int?
+  height       Int?
+  fileSize     BigInt?  @map("file_size")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  
+  @@map("vehicle_images")
+}
+
+// ================================
+// DOCUMENT TEMPLATES & MANAGEMENT
+// ================================
+
+model DocumentTemplate {
+  id              String           @id @default(cuid())
+  corridorId      String           @map("corridor_id")
+  name            String           @db.VarChar(255)
+  code            String           @db.VarChar(50)
+  description     String?          @db.Text
+  category        DocumentCategory
+  isRequired      Boolean          @default(true) @map("is_required")
+  expiresAfterDays Int?            @map("expires_after_days")
+  typicalIssuer   String?          @map("typical_issuer") @db.VarChar(255)
+  instructions    String?          @db.Text
+  orderSequence   Int              @default(1) @map("order_sequence")
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  
+  // Relations  
+  corridor        ImportCorridor   @relation(fields: [corridorId], references: [id])
+  vehicleDocuments VehicleDocument[]
+  
+  @@unique([corridorId, code])
+  @@map("document_templates")
+}
+
+model VehicleDocument {
+  id         String           @id @default(cuid())
+  vehicleId  String           @map("vehicle_id")
+  templateId String           @map("template_id")
+  fileUrl    String?          @map("file_url") @db.Text
+  fileName   String?          @map("file_name") @db.VarChar(255)
+  fileSize   BigInt?          @map("file_size")
+  fileType   String?          @map("file_type") @db.VarChar(100)
+  status     DocumentStatus   @default(PENDING)
+  issuer     String?          @db.VarChar(255)
+  issuedAt   DateTime?        @map("issued_at")
+  expiresAt  DateTime?        @map("expires_at")
+  notes      String?          @db.Text
+  uploadedBy String?          @map("uploaded_by")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+  
+  // Relations
+  vehicle    Vehicle          @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  template   DocumentTemplate @relation(fields: [templateId], references: [id])
+  uploader   User?            @relation(fields: [uploadedBy], references: [id])
+  
+  @@map("vehicle_documents")
+}
+
+// ================================
+// ORDERS & TRACKING
+// ================================
+
+model Order {
+  id                  String        @id @default(cuid())
+  organizationId      String        @map("organization_id")
+  orderNumber         String        @unique @map("order_number") @db.VarChar(50)
+  userId              String        @map("user_id")
+  vehicleId           String        @map("vehicle_id")
+  vehiclePriceUSD     Decimal       @map("vehicle_price_usd") @db.Decimal(12,2)
+  depositAmountUSD    Decimal       @map("deposit_amount_usd") @db.Decimal(12,2)
+  remainingAmountUSD  Decimal       @map("remaining_amount_usd") @db.Decimal(12,2)
+  feesUSD             Decimal       @default(0.00) @map("fees_usd") @db.Decimal(12,2)
+  totalUSD            Decimal       @map("total_usd") @db.Decimal(12,2)
+  depositPaid         Boolean       @default(false) @map("deposit_paid")
+  depositPaidAt       DateTime?     @map("deposit_paid_at")
+  fullPaid            Boolean       @default(false) @map("full_paid")
+  fullPaidAt          DateTime?     @map("full_paid_at")
+  paymentMethod       PaymentMethod?@map("payment_method")
+  currentStatus       String        @map("current_status") @db.VarChar(50)
+  estimatedCompletion DateTime?     @map("estimated_completion")
+  actualCompletion    DateTime?     @map("actual_completion")
+  trackingNumber      String?       @map("tracking_number") @db.VarChar(100)
+  priority            Priority      @default(STANDARD)
+  deliveryAddress     String?       @map("delivery_address") @db.Text
+  customerNotes       String?       @map("customer_notes") @db.Text
+  internalNotes       String?       @map("internal_notes") @db.Text
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  organization        Organization  @relation(fields: [organizationId], references: [id])
+  user                User          @relation(fields: [userId], references: [id])
+  vehicle             Vehicle       @relation(fields: [vehicleId], references: [id])
+  timeline            OrderTimeline[]
+  
+  @@map("orders")
+}
+
+model OrderStatusPipeline {
+  id                String         @id @default(cuid())
+  corridorId        String         @map("corridor_id")
+  statusCode        String         @map("status_code") @db.VarChar(50)
+  name              String         @db.VarChar(100)
+  description       String?        @db.Text
+  icon              String?        @db.VarChar(50)
+  category          String         @db.VarChar(20)
+  sequenceOrder     Int            @map("sequence_order")
+  estimatedDays     Int            @default(1) @map("estimated_days")
+  isMilestone       Boolean        @default(true) @map("is_milestone")
+  requiresDocuments Boolean        @default(false) @map("requires_documents")
+  autoAdvance       Boolean        @default(false) @map("auto_advance")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  
+  // Relations
+  corridor          ImportCorridor @relation(fields: [corridorId], references: [id])
+  
+  @@unique([corridorId, statusCode])
+  @@map("order_status_pipeline")
+}
+
+model OrderTimeline {
+  id               String    @id @default(cuid())
+  orderId          String    @map("order_id")
+  statusCode       String    @map("status_code") @db.VarChar(50)
+  title            String    @db.VarChar(255)
+  message          String?   @db.Text
+  eventType        String    @default("STATUS_CHANGE") @map("event_type") @db.VarChar(30)
+  isVisibleToClient Boolean  @default(true) @map("is_visible_to_client")
+  createdBy        String?   @map("created_by")
+  metadata         Json?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  
+  // Relations
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  creator          User?     @relation(fields: [createdBy], references: [id])
+  
+  @@map("order_timeline")
+}
+
+// ================================
+// CUSTOMER FEATURES
+// ================================
+
+model SearchRequest {
+  id                 String        @id @default(cuid())
+  userId             String        @map("user_id")
+  make               String?       @db.VarChar(50)
+  model              String?       @db.VarChar(100)
+  variant            String?       @db.VarChar(100)
+  yearMin            Int?          @map("year_min")
+  yearMax            Int?          @map("year_max")
+  budgetMax          Decimal?      @map("budget_max") @db.Decimal(12,2)
+  description        String?       @db.Text
+  status             SearchStatus  @default(ACTIVE)
+  priority           Priority      @default(NORMAL)
+  emailNotifications Boolean       @default(true) @map("email_notifications")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  
+  // Relations
+  user               User          @relation(fields: [userId], references: [id])
+  
+  @@map("search_requests")
+}
+
+model VehicleFavorite {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  vehicleId String   @map("vehicle_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, vehicleId])
+  @@map("vehicle_favorites")
+}
+
+// ================================
+// ENUMS
+// ================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  ORG_STAFF
+  CLIENT
+}
+
+enum VehicleStatus {
+  SOURCING
+  AUCTION
+  PURCHASED
+  EXPORT_DOCS
+  SHIPPING
+  CUSTOMS
+  AVAILABLE
+  RESERVED
+  SOLD
+  DELIVERED
+  ARCHIVED
+}
+
+enum VehicleCondition {
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  FAIR
+  PROJECT
+  PARTS_CAR
+}
+
+enum TransmissionType {
+  MANUAL_4
+  MANUAL_5
+  MANUAL_6
+  AUTO_3
+  AUTO_4
+  AUTO_5
+  CVT
+  SEQUENTIAL
+}
+
+enum DrivetrainType {
+  RWD
+  FWD
+  AWD
+  HALDEX
+}
+
+enum DocumentCategory {
+  EXPORT
+  SHIPPING  
+  IMPORT
+  CUSTOMS
+}
+
+enum DocumentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REQUIRES_ACTION
+  EXPIRED
+  NOT_APPLICABLE
+}
+
+enum DepositType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FULL_PAYMENT
+}
+
+enum PaymentMethod {
+  BANK_WIRE
+  CREDIT_CARD
+  CRYPTO
+  FINANCING
+  CASH
+  CHECK
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum SearchStatus {
+  ACTIVE
+  PAUSED
+  FULFILLED
+  CANCELLED
+}
