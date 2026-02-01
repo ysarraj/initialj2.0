@@ -11,21 +11,10 @@ export interface UserWithSubscription {
 }
 
 // Check if user can access a specific JLPT level based on lesson level
+// BETA MODE: All levels are free
 export function canAccessLevel(user: UserWithSubscription, lessonLevel: number): boolean {
-  // Admins have full access
-  if (user.role === 'ADMIN') return true;
-
-  // N5 is free (levels 1-10)
-  if (lessonLevel <= 10) return true;
-
-  // Paid levels require active subscription
-  const sub = user.subscription;
-  if (!sub) return false;
-
-  return (
-    sub.status === 'ACTIVE' &&
-    (sub.plan === 'MONTHLY' || sub.plan === 'YEARLY')
-  );
+  // BETA MODE - All levels are free
+  return true;
 }
 
 // Get JLPT level from lesson level
@@ -72,22 +61,15 @@ export async function getUserWithSubscription(userId: string): Promise<UserWithS
 }
 
 // Check if user has active paid subscription
+// BETA MODE: All users have access
 export function hasActiveSubscription(user: UserWithSubscription): boolean {
-  if (user.role === 'ADMIN') return true;
-
-  const sub = user.subscription;
-  if (!sub) return false;
-
-  return (
-    sub.status === 'ACTIVE' &&
-    (sub.plan === 'MONTHLY' || sub.plan === 'YEARLY')
-  );
+  // BETA MODE - All users have access
+  return true;
 }
 
 // Get accessible level range for user
+// BETA MODE: All levels accessible
 export function getAccessibleLevelRange(user: UserWithSubscription): { min: number; max: number } {
-  if (user.role === 'ADMIN' || hasActiveSubscription(user)) {
-    return { min: 1, max: 100 };
-  }
-  return { min: 1, max: 10 }; // N5 only
+  // BETA MODE - All levels are accessible
+  return { min: 1, max: 100 };
 }

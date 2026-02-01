@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Header from '@/src/components/layout/Header';
 import Button from '@/src/components/ui/Button';
-import Card from '@/src/components/ui/Card';
 import Input from '@/src/components/ui/Input';
 
 export default function RegisterPage() {
@@ -12,12 +12,15 @@ export default function RegisterPage() {
   const searchParams = useSearchParams();
   const plan = searchParams.get('plan');
 
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +42,7 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ email, password, username }),
       });
 
       const data = await res.json();
@@ -48,30 +51,8 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Failed to register');
       }
 
-      // Store token
-      localStorage.setItem('auth_token', data.token);
-
-      // If plan was selected, redirect to checkout
-      if (plan === 'monthly' || plan === 'yearly') {
-        const checkoutRes = await fetch('/api/subscription/create', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${data.token}`,
-          },
-          body: JSON.stringify({ plan }),
-        });
-
-        const checkoutData = await checkoutRes.json();
-
-        if (checkoutRes.ok && checkoutData.url) {
-          window.location.href = checkoutData.url;
-          return;
-        }
-      }
-
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Code sent successfully
+      setCodeSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to register');
     } finally {
@@ -79,91 +60,166 @@ export default function RegisterPage() {
     }
   };
 
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (verificationCode.length !== 4) {
+      setError('Please enter the 4-digit code');
+      return;
+    }
+
+    setVerifying(true);
+
+    try {
+      const res = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid verification code');
+      }
+
+      // Store token
+      localStorage.setItem('auth_token', data.token);
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify code');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold">
-            <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-              InitialJ
-            </span>
-          </Link>
-          <p className="text-gray-600 mt-2">
-            {plan ? `Create your account to subscribe to the ${plan} plan` : 'Create your free account to start learning Japanese'}
-          </p>
-        </div>
+    <div className="min-h-screen bg-white">
+      <Header />
+      <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl lg:text-5xl font-light text-dark-900 mb-4">
+              Create Account
+            </h1>
+            <p className="text-lg text-dark-600 font-light">
+              Start learning Japanese kanji and vocabulary - currently in beta, all levels are free
+            </p>
+          </div>
 
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
-                {error}
+          {!codeSent ? (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <Input
+                label="Username (optional)"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Your username"
+                fullWidth
+              />
+
+              <Input
+                label="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                fullWidth
+              />
+
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                required
+                fullWidth
+              />
+
+              <Input
+                label="Confirm Password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm your password"
+                required
+                fullWidth
+              />
+
+              <Button type="submit" fullWidth loading={loading} size="lg">
+                Send Verification Code
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyCode} className="space-y-6">
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="p-4 bg-green-50 border border-green-200 text-green-700 text-sm mb-4">
+                Verification code sent to <strong>{email}</strong>. Please check your email.
               </div>
-            )}
 
-            <Input
-              label="Name (optional)"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
-              fullWidth
-            />
+              <Input
+                label="Verification Code"
+                type="text"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="0000"
+                maxLength={4}
+                required
+                fullWidth
+                autoFocus
+              />
 
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              fullWidth
-            />
+              <Button type="submit" fullWidth loading={verifying} size="lg">
+                Verify Code
+              </Button>
 
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              required
-              fullWidth
-            />
+              <Button
+                type="button"
+                variant="ghost"
+                fullWidth
+                onClick={() => {
+                  setCodeSent(false);
+                  setVerificationCode('');
+                  setError('');
+                }}
+              >
+                Change Email
+              </Button>
+            </form>
+          )}
 
-            <Input
-              label="Confirm Password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm your password"
-              required
-              fullWidth
-            />
-
-            <Button type="submit" fullWidth loading={loading}>
-              {plan ? 'Create Account & Subscribe' : 'Create Free Account'}
-            </Button>
-          </form>
-
-          <p className="mt-4 text-xs text-center text-gray-500">
+          <p className="mt-6 text-xs text-center text-dark-500 font-light">
             By signing up, you agree to our Terms of Service and Privacy Policy.
           </p>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-8 text-center text-sm text-dark-600 font-light">
             Already have an account?{' '}
-            <Link href="/login" className="text-pink-600 hover:text-pink-700 font-medium">
+            <Link href="/login" className="text-dark-900 hover:underline font-light">
               Log in
             </Link>
           </div>
-        </Card>
 
-        {/* Free tier notice */}
-        {!plan && (
-          <p className="mt-6 text-center text-sm text-gray-500">
-            🎉 N5 level (100 kanji) is free forever. No credit card required.
+          {/* Beta notice */}
+          <p className="mt-8 text-center text-sm text-dark-500 font-light">
+            Currently in beta - all levels are free. No credit card required.
           </p>
-        )}
+        </div>
       </div>
     </div>
   );

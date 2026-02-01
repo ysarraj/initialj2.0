@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
-import { hashPassword, generateToken } from '@/src/lib/auth';
+import { hashPassword } from '@/src/lib/auth';
+import { emailService } from '@/src/lib/email';
+
+// Generate a random 4-digit code
+function generateVerificationCode(): string {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json();
+    const { email, password, username } = await request.json();
 
     // Validate input
     if (!email || !password) {
@@ -23,6 +29,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Block temporary email addresses (yopmail)
+    const emailLower = email.toLowerCase();
+    if (emailLower.includes('yopmail')) {
+      return NextResponse.json(
+        { error: 'Please don\'t use temporary email addresses' },
+        { status: 400 }
+      );
+    }
+
     // Check password strength
     if (password.length < 8) {
       return NextResponse.json(
@@ -33,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+      where: { email: emailLower },
     });
 
     if (existingUser) {
@@ -43,43 +58,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password and create user
+    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    const user = await prisma.user.create({
+    // Generate verification code
+    const code = generateVerificationCode();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // Code expires in 10 minutes
+
+    // Delete any existing verification codes for this email
+    await prisma.verificationCode.deleteMany({
+      where: { email: emailLower },
+    });
+
+    // Store verification code with user data
+    await prisma.verificationCode.create({
       data: {
-        email: email.toLowerCase(),
+        email: emailLower,
+        code,
         password: hashedPassword,
-        name: name || null,
-        role: 'USER',
-        subscription: {
-          create: {
-            plan: 'FREE',
-            status: 'ACTIVE',
-          },
-        },
-        settings: {
-          create: {},
-        },
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
+        username: username || null,
+        expiresAt,
       },
     });
 
-    // Generate token
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    // Send verification code via email
+    const emailSent = await emailService.sendVerificationCode(emailLower, code);
+
+    if (!emailSent) {
+      // Clean up verification code if email failed
+      await prisma.verificationCode.deleteMany({
+        where: { email: emailLower },
+      });
+      return NextResponse.json(
+        { error: 'Failed to send verification email. Please try again.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
-      user,
-      token,
+      message: 'Verification code sent to your email',
+      email: emailLower,
     });
   } catch (error) {
     console.error('Registration error:', error);

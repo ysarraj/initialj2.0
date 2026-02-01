@@ -24,16 +24,16 @@ export const SRS_STAGE_NAMES = {
 } as const;
 
 export const SRS_STAGE_COLORS = {
-  0: 'bg-gray-400',
-  1: 'bg-pink-400',
-  2: 'bg-pink-500',
-  3: 'bg-pink-600',
-  4: 'bg-pink-700',
-  5: 'bg-purple-500',
-  6: 'bg-purple-600',
-  7: 'bg-blue-500',
-  8: 'bg-blue-600',
-  9: 'bg-amber-500',
+  0: '#e5e5e5', // Locked - gray
+  1: '#1F2922', // Apprentice 1
+  2: '#2B322B', // Apprentice 2
+  3: '#373A34', // Apprentice 3
+  4: '#4E4B46', // Apprentice 4
+  5: '#6D685F', // Guru 1
+  6: '#8C8578', // Guru 2
+  7: '#C9BEAA', // Master
+  8: '#DED7BD', // Enlightened
+  9: '#C73E1D', // Burned
 } as const;
 
 // Calculate next review date based on SRS stage
@@ -61,9 +61,9 @@ export function getStageName(stage: number): string {
   return SRS_STAGE_NAMES[stage as keyof typeof SRS_STAGE_NAMES] || 'Unknown';
 }
 
-// Get stage color from number
+// Get stage color from number (returns hex color)
 export function getStageColor(stage: number): string {
-  return SRS_STAGE_COLORS[stage as keyof typeof SRS_STAGE_COLORS] || 'bg-gray-400';
+  return SRS_STAGE_COLORS[stage as keyof typeof SRS_STAGE_COLORS] || '#e5e5e5';
 }
 
 // Check if an item is due for review

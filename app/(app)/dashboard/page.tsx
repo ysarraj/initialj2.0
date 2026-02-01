@@ -40,16 +40,16 @@ interface Lesson {
 }
 
 const STAGE_COLORS: Record<number, string> = {
-  0: 'bg-gray-400',
-  1: 'bg-pink-400',
-  2: 'bg-pink-500',
-  3: 'bg-pink-600',
-  4: 'bg-pink-700',
-  5: 'bg-purple-500',
-  6: 'bg-purple-600',
-  7: 'bg-blue-500',
-  8: 'bg-blue-600',
-  9: 'bg-amber-500',
+  0: '#e5e5e5', // Locked - gray
+  1: '#1F2922', // Apprentice 1
+  2: '#2B322B', // Apprentice 2
+  3: '#373A34', // Apprentice 3
+  4: '#4E4B46', // Apprentice 4
+  5: '#6D685F', // Guru 1
+  6: '#8C8578', // Guru 2
+  7: '#C9BEAA', // Master
+  8: '#DED7BD', // Enlightened
+  9: '#C73E1D', // Burned
 };
 
 export default function DashboardPage() {
@@ -139,18 +139,30 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-dark-200 pb-8">
         <div>
-          <h1 className="text-3xl font-bold">
-            <span className="font-japanese">漢字</span> Kanji Learning
+          <h1 className="text-4xl lg:text-5xl font-light mb-2">
+            <span 
+              className="bg-clip-text text-transparent"
+              style={{ 
+                backgroundImage: 'linear-gradient(135deg, #1F2922 0%, #C73E1D 50%, #1F2922 100%)',
+                backgroundSize: '200% 200%',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                animation: 'gradient-animate 3s ease infinite'
+              }}
+            >
+              InitialJ
+            </span>
+            <span className="text-dark-900"> Dashboard</span>
           </h1>
-          <p className="text-gray-600 mt-1">Master Japanese kanji with spaced repetition</p>
+          <p className="text-lg text-dark-600 font-light">Master Japanese kanji and vocabulary with spaced repetition</p>
         </div>
         {progress && progress.pendingReviews.total > 0 && (
           <Link href="/reviews">
-            <Button size="lg">
+            <Button size="lg" className="animate-pulse-slow">
               Start Reviews ({progress.pendingReviews.total})
             </Button>
           </Link>
@@ -159,56 +171,55 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       {progress && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{progress.learned.kanji}</div>
-            <div className="text-sm text-gray-600">Kanji Learned</div>
-            <div className="text-xs text-gray-400 mt-1">of {progress.totals.kanji}</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <Card className="text-center p-6 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fadeIn">
+            <div className="text-4xl lg:text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.learned.kanji}</div>
+            <div className="text-sm text-dark-600 font-light uppercase tracking-wide mb-1">Kanji Learned</div>
+            <div className="text-xs text-dark-400 font-light">of {progress.totals.kanji}</div>
           </Card>
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{progress.learned.vocab}</div>
-            <div className="text-sm text-gray-600">Vocabulary</div>
-            <div className="text-xs text-gray-400 mt-1">of {progress.totals.vocab}</div>
+          <Card className="text-center p-6 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+            <div className="text-4xl lg:text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.learned.vocab}</div>
+            <div className="text-sm text-dark-600 font-light uppercase tracking-wide mb-1">Vocabulary</div>
+            <div className="text-xs text-dark-400 font-light">of {progress.totals.vocab}</div>
           </Card>
           <Link href="/burned" className="block">
-            <Card className="text-center cursor-pointer hover:shadow-lg transition-shadow">
-              <div className="text-3xl font-bold text-amber-500">{progress.burned.kanji + progress.burned.vocab}</div>
-              <div className="text-sm text-gray-600">Burned 🔥</div>
-              <div className="text-xs text-gray-400 mt-1">Click to manage</div>
+            <Card className="text-center p-6 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fadeIn" style={{ animationDelay: '0.2s', borderColor: STAGE_COLORS[9] }}>
+              <div className="text-4xl lg:text-5xl font-light mb-2 transition-transform hover:scale-110" style={{ color: STAGE_COLORS[9] }}>{progress.burned.kanji + progress.burned.vocab}</div>
+              <div className="text-sm font-light uppercase tracking-wide mb-1" style={{ color: STAGE_COLORS[9] }}>Burned</div>
+              <div className="text-xs text-dark-400 font-light">Click to manage</div>
             </Card>
           </Link>
-          <Card className="text-center">
-            <div className="text-3xl font-bold text-green-600">{progress.accuracy}%</div>
-            <div className="text-sm text-gray-600">Accuracy</div>
-            <div className="text-xs text-gray-400 mt-1">Overall score</div>
+          <Card className="text-center p-6 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
+            <div className="text-4xl lg:text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.accuracy}%</div>
+            <div className="text-sm text-dark-600 font-light uppercase tracking-wide mb-1">Accuracy</div>
+            <div className="text-xs text-dark-400 font-light">Overall score</div>
           </Card>
         </div>
       )}
 
       {/* Reviews Section */}
       {progress && (
-        <Card>
-          <h2 className="text-xl font-semibold mb-4">Reviews</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="text-center p-4 bg-pink-50 rounded-lg">
-              <div className="text-4xl font-bold text-pink-600">{progress.pendingReviews.total}</div>
-              <div className="text-sm text-pink-600/80 mt-1">Pending Reviews</div>
+        <Card className="p-8 hover:shadow-lg transition-all duration-300 animate-fadeIn">
+          <h2 className="text-2xl font-light text-dark-900 mb-8 uppercase tracking-wide">Reviews</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center p-6 border border-dark-200 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105">
+              <div className="text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.pendingReviews.total}</div>
+              <div className="text-sm text-dark-600 font-light uppercase tracking-wide">Pending Reviews</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
+            <div className="text-center p-6 border border-dark-200 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105">
+              <div className="text-2xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">
                 {formatNextReview(progress.nextReviewAt)}
               </div>
-              <div className="text-sm text-blue-600/80 mt-1">Next Review</div>
+              <div className="text-sm text-dark-600 font-light uppercase tracking-wide">Next Review</div>
             </div>
             <div className="flex items-center justify-center">
               {progress.pendingReviews.total > 0 ? (
                 <Link href="/reviews" className="w-full">
-                  <Button fullWidth>Start Reviews</Button>
+                  <Button fullWidth size="lg" className="animate-pulse-slow">Start Reviews</Button>
                 </Link>
               ) : (
-                <div className="text-center text-gray-600">
-                  <span className="text-2xl">🎉</span>
-                  <p className="mt-2">All caught up!</p>
+                <div className="text-center text-dark-600 font-light">
+                  <p className="text-lg animate-float">All caught up!</p>
                 </div>
               )}
             </div>
@@ -218,24 +229,31 @@ export default function DashboardPage() {
 
       {/* SRS Stage Distribution */}
       {progress && (
-        <Card>
-          <h2 className="text-xl font-semibold mb-4">SRS Progress</h2>
-          <div className="space-y-3">
-            {progress.stageData.filter(s => s.stage > 0).map((stage) => {
+        <Card className="p-8 hover:shadow-lg transition-all duration-300 animate-fadeIn">
+          <h2 className="text-2xl font-light text-dark-900 mb-8 uppercase tracking-wide">SRS Progress</h2>
+          <div className="space-y-4">
+            {progress.stageData.filter(s => s.stage > 0).map((stage, index) => {
               const total = stage.kanji + stage.vocab;
               const maxTotal = Math.max(...progress.stageData.map(s => s.kanji + s.vocab), 1);
               const width = (total / maxTotal) * 100;
 
               return (
-                <div key={stage.stage} className="flex items-center gap-3">
-                  <div className="w-28 text-sm text-gray-600">{stage.name}</div>
-                  <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden">
+                <div 
+                  key={stage.stage} 
+                  className="flex items-center gap-4 hover:scale-[1.02] transition-all duration-200 animate-fadeIn"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div className="w-32 text-sm text-dark-600 font-light uppercase tracking-wide">{stage.name}</div>
+                  <div className="flex-1 h-2 bg-dark-100 overflow-hidden hover:h-3 transition-all duration-200">
                     <div
-                      className={`h-full ${STAGE_COLORS[stage.stage]} transition-all duration-500`}
-                      style={{ width: `${width}%` }}
+                      className="h-full transition-all duration-700 hover:opacity-80"
+                      style={{ 
+                        width: `${width}%`,
+                        backgroundColor: STAGE_COLORS[stage.stage] || STAGE_COLORS[0]
+                      }}
                     />
                   </div>
-                  <div className="w-16 text-sm text-right text-gray-500">{total}</div>
+                  <div className="w-16 text-sm text-right text-dark-500 font-light transition-transform hover:scale-110">{total}</div>
                 </div>
               );
             })}
@@ -245,18 +263,18 @@ export default function DashboardPage() {
 
       {/* Levels */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Levels</h2>
+        <div className="flex items-center justify-between mb-8 border-b border-dark-200 pb-4">
+          <h2 className="text-2xl font-light text-dark-900 uppercase tracking-wide">Levels</h2>
           {/* JLPT Filter */}
           <div className="flex gap-2">
             {[null, 5, 4, 3, 2, 1].map((jlpt) => (
               <button
                 key={jlpt ?? 'all'}
                 onClick={() => setSelectedJlpt(jlpt)}
-                className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                className={`px-4 py-1.5 text-xs font-light uppercase tracking-wide transition-all duration-200 hover:scale-110 active:scale-95 ${
                   selectedJlpt === jlpt
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-dark-900 text-white animate-pulse-slow shadow-lg'
+                    : 'bg-white border border-dark-200 text-dark-600 hover:border-dark-900 hover:shadow-md'
                 }`}
               >
                 {jlpt === null ? 'All' : `N${jlpt}`}
@@ -288,109 +306,86 @@ export default function DashboardPage() {
               const isCurrentLevel = lesson.isUnlocked && !lesson.isComplete &&
                 (index === 0 || lessons[index - 1]?.isComplete);
 
-              // Check if locked due to subscription
-              const lockedBySubscription = !lesson.isAccessible && lesson.level > 10;
-
               return (
                 <div
                   key={lesson.id}
-                  className={`relative p-4 transition-all rounded-xl border-2 ${
-                    lockedBySubscription
-                      ? 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-200 cursor-pointer hover:shadow-lg'
-                      : !lesson.isUnlocked
-                      ? 'bg-gray-100 border-gray-200 cursor-not-allowed opacity-60'
+                  className={`relative p-6 transition-all duration-300 border ${
+                    !lesson.isUnlocked
+                      ? 'bg-dark-50 border-dark-200 cursor-not-allowed opacity-50'
                       : lesson.isComplete
-                      ? 'bg-green-50 border-green-300 cursor-pointer hover:shadow-lg'
+                      ? 'bg-white border-dark-900 cursor-pointer hover:border-dark-900 hover:shadow-lg hover:scale-[1.02]'
                       : isCurrentLevel
-                      ? 'bg-gradient-to-br from-pink-50 to-purple-50 border-pink-400 cursor-pointer hover:shadow-lg ring-2 ring-pink-400 ring-offset-2'
-                      : 'bg-white border-gray-200 cursor-pointer hover:shadow-lg'
+                      ? 'bg-white border-dark-900 cursor-pointer hover:border-dark-900 hover:shadow-lg hover:scale-[1.02]'
+                      : 'bg-white border-dark-200 cursor-pointer hover:border-dark-900 hover:shadow-md hover:scale-[1.01]'
                   }`}
                   onClick={() => {
-                    if (lockedBySubscription) {
-                      router.push('/pricing');
-                    } else if (lesson.isUnlocked) {
+                    if (lesson.isUnlocked) {
                       router.push(`/lessons/${lesson.id}`);
                     }
                   }}
                 >
-                  {isCurrentLevel && !lockedBySubscription && (
-                    <div className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs px-2 py-0.5 rounded-full font-medium animate-pulse">
+                  {isCurrentLevel && (
+                    <div className="absolute -top-2 -right-2 bg-dark-900 text-white text-xs px-3 py-1 font-light uppercase tracking-wide animate-pulse-slow animate-glow cursor-pointer hover:scale-110 transition-transform">
                       Current
                     </div>
                   )}
 
-                  {lockedBySubscription && (
-                    <div className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                      Pro
-                    </div>
-                  )}
-
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-2xl font-bold ${
-                        lesson.isComplete ? 'text-green-500' :
-                        lesson.isUnlocked && !lockedBySubscription ? 'text-pink-500' : 'text-gray-400'
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-4xl font-light ${
+                        lesson.isComplete ? 'text-dark-900' :
+                        lesson.isUnlocked ? 'text-dark-900' : 'text-dark-400'
                       }`}>
                         {lesson.level}
                       </span>
-                      {lesson.isComplete && <span className="text-green-500">✓</span>}
+                      {lesson.isComplete && <span className="text-dark-900 text-xl">—</span>}
                     </div>
-                    {(!lesson.isUnlocked || lockedBySubscription) && (
-                      <span className="text-lg">🔒</span>
+                    {!lesson.isUnlocked && (
+                      <span className="text-dark-400 font-light">Locked</span>
                     )}
                   </div>
 
-                  <h3 className={`font-semibold mb-1 ${
-                    !lesson.isUnlocked || lockedBySubscription ? 'text-gray-500' : 'text-gray-900'
+                  <h3 className={`font-light text-lg mb-3 ${
+                    !lesson.isUnlocked ? 'text-dark-400' : 'text-dark-900'
                   }`}>
                     {lesson.title.split(' - ')[0]}
                   </h3>
 
-                  <div className={`flex gap-3 text-xs ${
-                    !lesson.isUnlocked || lockedBySubscription ? 'text-gray-400' : 'text-gray-500'
+                  <div className={`flex gap-4 text-xs font-light uppercase tracking-wide mb-4 ${
+                    !lesson.isUnlocked ? 'text-dark-400' : 'text-dark-500'
                   }`}>
                     <span>{lesson.kanjiCount} kanji</span>
                     <span>{lesson.vocabCount} vocab</span>
                   </div>
 
-                  {/* Progress bar for accessible unlocked lessons */}
-                  {lesson.isUnlocked && !lockedBySubscription && (
-                    <div className="mt-3">
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  {/* Progress bar for unlocked lessons */}
+                  {lesson.isUnlocked && (
+                    <div className="mt-4">
+                      <div className="h-1 bg-dark-100 overflow-hidden">
                         <div
-                          className={`h-full transition-all duration-500 ${
-                            lesson.isComplete
-                              ? 'bg-green-500'
-                              : 'bg-gradient-to-r from-pink-500 to-purple-500'
-                          }`}
+                          className={`h-full transition-all duration-500 bg-dark-900`}
                           style={{ width: `${lesson.progress}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-xs mt-1">
-                        <span className={lesson.isComplete ? 'text-green-600' : 'text-gray-400'}>
+                      <div className="flex justify-between text-xs mt-2 font-light text-dark-500">
+                        <span className={lesson.isComplete ? 'text-dark-900' : 'text-dark-500'}>
                           {lesson.progress}%
                         </span>
                         {lesson.isComplete ? (
-                          <span className="text-green-600 font-medium">Complete!</span>
+                          <span className="text-dark-900 font-light">Complete</span>
                         ) : lesson.progress > 0 ? (
-                          <span className="text-gray-400">In progress</span>
+                          <span className="text-dark-400 font-light">In progress</span>
                         ) : (
-                          <span className="text-pink-500 font-medium">Start →</span>
+                          <span className="text-dark-900 font-light">Start →</span>
                         )}
                       </div>
                     </div>
                   )}
 
                   {/* Locked message */}
-                  {!lesson.isUnlocked && !lockedBySubscription && (
-                    <div className="mt-3 text-xs text-gray-400">
+                  {!lesson.isUnlocked && (
+                    <div className="mt-4 text-xs text-dark-400 font-light">
                       Complete Level {lesson.level - 1} to unlock
-                    </div>
-                  )}
-
-                  {lockedBySubscription && (
-                    <div className="mt-3 text-xs text-pink-600 font-medium">
-                      Upgrade to access →
                     </div>
                   )}
                 </div>

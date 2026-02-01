@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "InitialJ - Learn Japanese Kanji",
-  description: "Master Japanese kanji with spaced repetition. Free N5 level, subscribe for N4-N1.",
-  keywords: ["Japanese", "Kanji", "JLPT", "Learning", "SRS", "Spaced Repetition"],
+  title: "InitialJ - Learn Japanese Kanji & Vocabulary",
+  description: "Master Japanese kanji and vocabulary for JLPT exams through spaced repetition. Currently in beta - all levels are free.",
+  keywords: ["Japanese", "Kanji", "Vocabulary", "JLPT", "Learning", "SRS", "Spaced Repetition"],
 };
 
 export default function RootLayout({

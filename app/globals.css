@@ -1,6 +1,18 @@
 @import "tailwindcss";
 
 @theme {
+  /* Dark Colors - Mode Designs style */
+  --color-dark-50: #fafafa;
+  --color-dark-100: #f5f5f5;
+  --color-dark-200: #e5e5e5;
+  --color-dark-300: #d4d4d4;
+  --color-dark-400: #a3a3a3;
+  --color-dark-500: #737373;
+  --color-dark-600: #525252;
+  --color-dark-700: #404040;
+  --color-dark-800: #262626;
+  --color-dark-900: #171717;
+
   /* InitialJ Brand Colors */
   --color-pink-50: #fdf2f8;
   --color-pink-100: #fce7f3;
@@ -31,9 +43,12 @@
 }
 
 body {
-  background: var(--background);
+  background: #ffffff;
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Japanese font for kanji/kana */
@@ -41,7 +56,7 @@ body {
   font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', 'MS Gothic', sans-serif;
 }
 
-/* Animations */
+/* Animations - ADHD Friendly */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -58,8 +73,78 @@ body {
   50% { transform: translateY(-10px); }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(23, 23, 23, 0.3), 0 0 10px rgba(23, 23, 23, 0.2); }
+  50% { box-shadow: 0 0 15px rgba(23, 23, 23, 0.5), 0 0 25px rgba(23, 23, 23, 0.3), 0 0 35px rgba(23, 23, 23, 0.2); }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes gradient-flow {
+  0%, 100% {
+    background: linear-gradient(135deg, #1F2922 0%, #C73E1D 100%);
+  }
+  25% {
+    background: linear-gradient(135deg, #2B322B 0%, #C73E1D 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, #373A34 0%, #C73E1D 100%);
+  }
+  75% {
+    background: linear-gradient(135deg, #4E4B46 0%, #C73E1D 100%);
+  }
+}
+
+@keyframes gradient-animate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .animate-fadeIn {
-  animation: fadeIn 0.15s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .animate-shake {
@@ -68,6 +153,37 @@ body {
 
 .animate-bounce-sm {
   animation: bounce 0.6s ease-in-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.4s ease-out;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
 }
 
 /* Focus visible ring */
@@ -93,4 +209,28 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* ADHD Friendly Interactions */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+button, a, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:hover, a:hover, [role="button"]:hover {
+  transform: translateY(-1px);
+}
+
+button:active, a:active, [role="button"]:active {
+  transform: translateY(0px);
+}
+
+/* Smooth focus transitions */
+*:focus-visible {
+  outline: 2px solid var(--color-dark-900);
+  outline-offset: 2px;
+  transition: outline 0.2s ease;
 }

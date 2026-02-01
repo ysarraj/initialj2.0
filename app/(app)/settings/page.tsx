@@ -99,27 +99,6 @@ export default function SettingsPage() {
     });
   };
 
-  const handleManageSubscription = async () => {
-    const token = getAuthToken();
-    if (!token) return;
-
-    try {
-      const res = await fetch('/api/subscription/portal', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) throw new Error('Failed to create portal session');
-
-      const { url } = await res.json();
-      window.location.href = url;
-    } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to open billing portal' });
-    }
-  };
 
   if (loading) {
     return (
@@ -129,7 +108,6 @@ export default function SettingsPage() {
     );
   }
 
-  const isPaid = user?.subscription?.plan !== 'FREE' && user?.subscription?.status === 'ACTIVE';
   const isAdmin = user?.role === 'ADMIN';
 
   return (
@@ -162,9 +140,9 @@ export default function SettingsPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <Input
-              value={user?.name || ''}
+              value={user?.username || ''}
               disabled
               fullWidth
             />
@@ -187,56 +165,27 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      {/* Subscription Section */}
+      {/* Account Status Section */}
       <Card>
-        <h2 className="text-lg font-semibold mb-4">Subscription</h2>
+        <h2 className="text-lg font-semibold mb-4">Account Status</h2>
 
         {isAdmin ? (
-          <div className="p-4 bg-purple-50 rounded-lg">
+          <div className="p-4 bg-dark-50 rounded-lg border border-dark-200">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-purple-700 font-semibold">Admin Account</span>
+              <span className="text-dark-900 font-light uppercase tracking-wide">Admin Account</span>
             </div>
-            <p className="text-sm text-purple-600">
+            <p className="text-sm text-dark-600 font-light">
               As an admin, you have unlimited access to all content and features.
             </p>
           </div>
-        ) : isPaid ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-pink-700">
-                  {user?.subscription?.plan === 'MONTHLY' ? 'Monthly' : 'Yearly'} Plan
-                </span>
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                  Active
-                </span>
-              </div>
-              <p className="text-sm text-gray-600">
-                {user?.subscription?.cancelAtPeriodEnd
-                  ? `Cancels on ${formatDate(user?.subscription?.currentPeriodEnd)}`
-                  : `Renews on ${formatDate(user?.subscription?.currentPeriodEnd)}`}
-              </p>
-            </div>
-            <Button variant="secondary" onClick={handleManageSubscription} fullWidth>
-              Manage Subscription
-            </Button>
-          </div>
         ) : (
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-semibold text-gray-700">Free Plan</span>
-                <span className="px-3 py-1 bg-gray-200 text-gray-600 text-sm font-medium rounded-full">
-                  N5 Only
-                </span>
-              </div>
-              <p className="text-sm text-gray-600">
-                Upgrade to access all JLPT levels (N4-N1) with 2000+ kanji and vocabulary.
-              </p>
+          <div className="p-4 bg-dark-50 rounded-lg border border-dark-200">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-dark-900 font-light uppercase tracking-wide">Beta Access</span>
             </div>
-            <Button onClick={() => router.push('/pricing')} fullWidth>
-              Upgrade to Pro
-            </Button>
+            <p className="text-sm text-dark-600 font-light">
+              Currently in beta - all levels (N5-N1) are free. Enjoy full access to kanji and relevant vocabulary for each JLPT level.
+            </p>
           </div>
         )}
       </Card>

@@ -12,17 +12,18 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={fullWidth ? 'w-full' : ''}>
         {label && (
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-xs font-light text-dark-700 mb-2 uppercase tracking-wide">
             {label}
           </label>
         )}
         <input
           ref={ref}
           className={cn(
-            'w-full px-4 py-2.5 text-sm border rounded-xl bg-white outline-none transition-all',
-            'focus:ring-2 focus:ring-pink-500 focus:border-pink-500',
-            'placeholder:text-gray-400',
-            error ? 'border-red-500' : 'border-gray-200',
+            'w-full px-4 py-3 text-sm border bg-white outline-none transition-all duration-200 font-light',
+            'focus:ring-2 focus:ring-dark-900 focus:border-dark-900 focus:scale-[1.01]',
+            'placeholder:text-dark-400',
+            'hover:border-dark-300',
+            error ? 'border-red-500 focus:ring-red-500' : 'border-dark-200',
             className
           )}
           {...props}

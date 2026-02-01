@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Header from '@/src/components/layout/Header';
 import Button from '@/src/components/ui/Button';
-import Card from '@/src/components/ui/Card';
 import Input from '@/src/components/ui/Input';
 
 export default function LoginPage() {
@@ -45,22 +45,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold">
-            <span className="bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-              InitialJ
-            </span>
-          </Link>
-          <p className="text-gray-600 mt-2">Welcome back! Log in to continue learning.</p>
-        </div>
+    <div className="min-h-screen bg-white">
+      <Header />
+      <div className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl lg:text-5xl font-light text-dark-900 mb-4">
+              Welcome Back
+            </h1>
+            <p className="text-lg text-dark-600 font-light">
+              Log in to continue your Japanese learning journey
+            </p>
+          </div>
 
-        <Card>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
+              <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm">
                 {error}
               </div>
             )}
@@ -86,27 +86,27 @@ export default function LoginPage() {
             />
 
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="rounded border-gray-300" />
-                <span className="text-gray-600">Remember me</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="rounded border-dark-200" />
+                <span className="text-dark-600 font-light">Remember me</span>
               </label>
-              <Link href="/forgot-password" className="text-pink-600 hover:text-pink-700">
+              <Link href="/forgot-password" className="text-dark-600 hover:text-dark-900 font-light">
                 Forgot password?
               </Link>
             </div>
 
-            <Button type="submit" fullWidth loading={loading}>
+            <Button type="submit" fullWidth loading={loading} size="lg">
               Log In
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-gray-600">
+          <div className="mt-8 text-center text-sm text-dark-600 font-light">
             Don't have an account?{' '}
-            <Link href="/register" className="text-pink-600 hover:text-pink-700 font-medium">
-              Sign up free
+            <Link href="/register" className="text-dark-900 hover:underline font-light">
+              Sign up
             </Link>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

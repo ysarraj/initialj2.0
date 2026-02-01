@@ -1,0 +1,21 @@
+export const emailConfig = {
+  smtp: {
+    host: process.env.SMTP_HOST || 'mail.infomaniak.com',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: false, // STARTTLS on port 587
+    auth: {
+      user: process.env.SMTP_USER || 'support@initialj.com',
+      pass: process.env.SMTP_PASSWORD || process.env.SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: true,
+    },
+  },
+  from: {
+    name: 'InitialJ',
+    email: process.env.SMTP_FROM || 'support@initialj.com',
+  },
+  replyTo: process.env.SMTP_REPLY_TO || 'support@initialj.com',
+} as const;
+
+export type EmailConfig = typeof emailConfig;

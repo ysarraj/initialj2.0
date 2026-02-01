@@ -18,13 +18,13 @@ enum Role {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String?
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  username  String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   subscription  Subscription?
   kanjiProgress UserKanjiProgress[]
@@ -35,14 +35,28 @@ model User {
   @@index([role])
 }
 
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String   // 4-digit code
+  password  String   // Hashed password (stored temporarily)
+  username  String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([code])
+  @@index([expiresAt])
+}
+
 // =====================================
 // SUBSCRIPTION SYSTEM
 // =====================================
 
 enum Plan {
-  FREE      // N5 only
-  MONTHLY   // 2 CHF/month - all levels
-  YEARLY    // 20 CHF/year - all levels
+  FREE // N5 only
+  MONTHLY // 3 USD/month - all levels
+  YEARLY // 30 USD/year - all levels
 }
 
 enum SubscriptionStatus {
@@ -53,17 +67,17 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   stripeCustomerId     String?
   stripeSubscriptionId String?
-  plan                 Plan     @default(FREE)
+  plan                 Plan               @default(FREE)
   status               SubscriptionStatus @default(ACTIVE)
   currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
@@ -76,50 +90,50 @@ model Subscription {
 model KanjiLesson {
   id          String   @id @default(cuid())
   level       Int      @unique // 1-100
-  title       String   // e.g., "Lesson 1: Basic Radicals"
+  title       String // e.g., "Lesson 1: Basic Radicals"
   description String?
   kanjiCount  Int      @default(0)
   vocabCount  Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  kanji       Kanji[]
-  vocabulary  Vocabulary[]
+  kanji      Kanji[]
+  vocabulary Vocabulary[]
 
   @@index([level])
 }
 
 model Kanji {
-  id            String   @id @default(cuid())
-  character     String   @unique // The kanji character itself
-  lessonId      String
-  lesson        KanjiLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id        String      @id @default(cuid())
+  character String      @unique // The kanji character itself
+  lessonId  String
+  lesson    KanjiLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   // Readings stored as JSON arrays
-  kunYomi       String   @default("[]") // Japanese readings
-  onYomi        String   @default("[]") // Chinese readings
-  nanori        String   @default("[]") // Name readings
+  kunYomi String @default("[]") // Japanese readings
+  onYomi  String @default("[]") // Chinese readings
+  nanori  String @default("[]") // Name readings
 
   // Meanings
-  meanings      String   @default("[]") // JSON array of English meanings
-  primaryMeaning String  // Main meaning for reviews
+  meanings       String @default("[]") // JSON array of English meanings
+  primaryMeaning String // Main meaning for reviews
 
   // Metadata
-  grade         Int?     // School grade (1-6 for Joyo, 8 for Jinmeiyo)
-  jlpt          Int?     // JLPT level (1-5, 1 being hardest)
-  strokeCount   Int?
-  unicode       String?  // Unicode code point
+  grade       Int? // School grade (1-6 for Joyo, 8 for Jinmeiyo)
+  jlpt        Int? // JLPT level (1-5, 1 being hardest)
+  strokeCount Int?
+  unicode     String? // Unicode code point
 
   // Mnemonics (user can customize)
   meaningMnemonic String?
   readingMnemonic String?
 
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  vocabulary    KanjiVocabulary[]
-  userProgress  UserKanjiProgress[]
+  vocabulary   KanjiVocabulary[]
+  userProgress UserKanjiProgress[]
 
   @@index([lessonId])
   @@index([character])
@@ -128,32 +142,32 @@ model Kanji {
 }
 
 model Vocabulary {
-  id            String   @id @default(cuid())
-  word          String   // The vocabulary word (can contain kanji + kana)
-  lessonId      String
-  lesson        KanjiLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  id       String      @id @default(cuid())
+  word     String // The vocabulary word (can contain kanji + kana)
+  lessonId String
+  lesson   KanjiLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
-  reading       String   // Hiragana/katakana reading
-  meanings      String   @default("[]") // JSON array of English meanings
-  primaryMeaning String  // Main meaning for reviews
+  reading        String // Hiragana/katakana reading
+  meanings       String @default("[]") // JSON array of English meanings
+  primaryMeaning String // Main meaning for reviews
 
   // Part of speech and usage
-  partOfSpeech  String?  // noun, verb, adjective, etc.
-  sentences     String   @default("[]") // JSON array of example sentences
+  partOfSpeech String? // noun, verb, adjective, etc.
+  sentences    String  @default("[]") // JSON array of example sentences
 
   // Mnemonics
   meaningMnemonic String?
   readingMnemonic String?
 
   // Audio (optional future feature)
-  audioUrl      String?
+  audioUrl String?
 
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  kanjiLinks    KanjiVocabulary[]
-  userProgress  UserVocabProgress[]
+  kanjiLinks   KanjiVocabulary[]
+  userProgress UserVocabProgress[]
 
   @@unique([word, reading])
   @@index([lessonId])
@@ -162,11 +176,11 @@ model Vocabulary {
 
 // Many-to-many relationship between Kanji and Vocabulary
 model KanjiVocabulary {
-  id          String     @id @default(cuid())
-  kanjiId     String
-  kanji       Kanji      @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
+  id           String     @id @default(cuid())
+  kanjiId      String
+  kanji        Kanji      @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
   vocabularyId String
-  vocabulary  Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
 
   @@unique([kanjiId, vocabularyId])
   @@index([kanjiId])
@@ -190,25 +204,25 @@ model KanjiVocabulary {
 // 9: Burned (complete)
 
 model UserKanjiProgress {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kanjiId       String
-  kanji         Kanji    @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kanjiId String
+  kanji   Kanji  @relation(fields: [kanjiId], references: [id], onDelete: Cascade)
 
-  srsStage      Int      @default(0) // 0-9
-  meaningCorrect Int     @default(0)
-  meaningIncorrect Int   @default(0)
-  readingCorrect Int     @default(0)
-  readingIncorrect Int   @default(0)
+  srsStage         Int @default(0) // 0-9
+  meaningCorrect   Int @default(0)
+  meaningIncorrect Int @default(0)
+  readingCorrect   Int @default(0)
+  readingIncorrect Int @default(0)
 
-  unlockedAt    DateTime @default(now())
+  unlockedAt     DateTime  @default(now())
   lastReviewedAt DateTime?
-  nextReviewAt  DateTime?
-  burnedAt      DateTime?
+  nextReviewAt   DateTime?
+  burnedAt       DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, kanjiId])
   @@index([userId])
@@ -218,25 +232,25 @@ model UserKanjiProgress {
 }
 
 model UserVocabProgress {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vocabularyId  String
-  vocabulary    Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vocabularyId String
+  vocabulary   Vocabulary @relation(fields: [vocabularyId], references: [id], onDelete: Cascade)
 
-  srsStage      Int      @default(0) // 0-9
-  meaningCorrect Int     @default(0)
-  meaningIncorrect Int   @default(0)
-  readingCorrect Int     @default(0)
-  readingIncorrect Int   @default(0)
+  srsStage         Int @default(0) // 0-9
+  meaningCorrect   Int @default(0)
+  meaningIncorrect Int @default(0)
+  readingCorrect   Int @default(0)
+  readingIncorrect Int @default(0)
 
-  unlockedAt    DateTime @default(now())
+  unlockedAt     DateTime  @default(now())
   lastReviewedAt DateTime?
-  nextReviewAt  DateTime?
-  burnedAt      DateTime?
+  nextReviewAt   DateTime?
+  burnedAt       DateTime?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, vocabularyId])
   @@index([userId])
@@ -247,16 +261,16 @@ model UserVocabProgress {
 
 // Track overall user progress and settings
 model UserSettings {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  currentLevel    Int      @default(1) // Current lesson level unlocked
-  lessonsPerDay   Int      @default(20) // Max new items per day
-  reviewsPerSession Int    @default(100) // Max reviews per session
-  autoplayAudio   Boolean  @default(true)
-  showMnemonics   Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentLevel      Int      @default(1) // Current lesson level unlocked
+  lessonsPerDay     Int      @default(20) // Max new items per day
+  reviewsPerSession Int      @default(100) // Max reviews per session
+  autoplayAudio     Boolean  @default(true)
+  showMnemonics     Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([userId])
 }

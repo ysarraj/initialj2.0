@@ -20,7 +20,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'bg-white rounded-2xl border border-gray-100 shadow-sm',
+          'bg-white border border-dark-200 transition-all duration-300 hover:shadow-md',
           paddingStyles[padding],
           className
         )}

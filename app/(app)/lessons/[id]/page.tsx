@@ -270,7 +270,8 @@ export default function LessonPage() {
 
         if (!res.ok) {
           if (res.status === 402) {
-            router.push('/pricing');
+            // In beta mode, all levels are accessible - redirect to dashboard
+            router.push('/dashboard');
             return;
           }
           if (res.status === 403) {

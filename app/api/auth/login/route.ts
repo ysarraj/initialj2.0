@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         id: true,
         email: true,
         password: true,
-        name: true,
+        username: true,
         role: true,
         subscription: {
           select: {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        username: user.username,
         role: user.role,
         subscription: user.subscription,
       },

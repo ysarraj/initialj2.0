@@ -16,7 +16,7 @@ export interface AuthUser {
   id: string;
   email: string;
   role: string;
-  name: string | null;
+  username: string | null;
 }
 
 // Hash password
@@ -64,7 +64,7 @@ export async function getUserFromRequest(request: NextRequest): Promise<AuthUser
       id: true,
       email: true,
       role: true,
-      name: true,
+      username: true,
     },
   });
 

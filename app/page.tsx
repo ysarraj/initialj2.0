@@ -1,64 +1,119 @@
-import Header from '@/src/components/layout/Header';
-import Button from '@/src/components/ui/Button';
 import Link from 'next/link';
+import Header from '@/src/components/layout/Header';
+import Footer from '@/src/components/layout/Footer';
+import Button from '@/src/components/ui/Button';
+
+const JLPT_LEVELS = [
+  { level: 'N5', kanji: '100', description: 'Basic', free: true },
+  { level: 'N4', kanji: '300', description: 'Elementary', free: false },
+  { level: 'N3', kanji: '650', description: 'Intermediate', free: false },
+  { level: 'N2', kanji: '1000', description: 'Advanced', free: false },
+  { level: 'N1', kanji: '2000', description: 'Proficient', free: false },
+];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-broken-50 to-broken-100">
+    <main className="min-h-screen bg-white">
       <Header />
       
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      {/* Hero Section - Mode Designs style */}
+      <section className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 py-32 lg:py-48">
         <div className="text-center">
-          <h1 className="font-title text-4xl md:text-6xl font-bold text-dark-800 mb-6">
-            Import de Voitures JDM
-            <span className="block text-vermillion-500">Authentiques</span>
+          <div 
+            className="text-[120px] lg:text-[180px] mb-12 leading-none bg-clip-text text-transparent font-light"
+            style={{ 
+              backgroundImage: 'linear-gradient(135deg, #1F2922 0%, #C73E1D 50%, #1F2922 100%)',
+              backgroundSize: '200% 200%',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              animation: 'gradient-animate 3s ease infinite'
+            }}
+          >
+            InitialJ
+          </div>
+          <h1 className="text-5xl lg:text-7xl font-light text-dark-900 mb-8 tracking-tight">
+            Master Japanese Kanji & Vocabulary
           </h1>
-          
-          <p className="text-xl text-dark-600 mb-8 max-w-3xl mx-auto">
-            Découvrez notre sélection exclusive de véhicules japonais importés directement 
-            du Japon. Qualité garantie, authenticité vérifiée.
+          <p className="text-xl lg:text-2xl text-dark-600 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
+            Learn kanji and relevant vocabulary for each JLPT level through spaced repetition. Currently in beta - all levels are free.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/vehicles">
-              <Button size="lg">Explorer les véhicules</Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fadeIn">
+            <Link href="/register">
+              <Button size="lg" className="px-8 py-4 text-lg animate-pulse-slow">Start Learning</Button>
             </Link>
-            <Link href="/about">
-              <Button variant="outline" size="lg">En savoir plus</Button>
+            <Link href="/login">
+              <Button variant="ghost" size="lg" className="px-8 py-4 text-lg">Log in</Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center p-6 bg-white rounded-lg shadow-sm border border-dark-200">
-            <div className="w-12 h-12 bg-vermillion-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-vermillion-500 text-2xl">🚗</span>
-            </div>
-            <h3 className="font-semibold text-lg text-dark-800 mb-2">Véhicules Authentiques</h3>
-            <p className="text-dark-600">Importation directe du Japon avec certificats d'authenticité</p>
-          </div>
-          
-          <div className="text-center p-6 bg-white rounded-lg shadow-sm border border-dark-200">
-            <div className="w-12 h-12 bg-vermillion-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-vermillion-500 text-2xl">✅</span>
-            </div>
-            <h3 className="font-semibold text-lg text-dark-800 mb-2">Qualité Vérifiée</h3>
-            <p className="text-dark-600">Inspection complète et remise en état par nos experts</p>
-          </div>
-          
-          <div className="text-center p-6 bg-white rounded-lg shadow-sm border border-dark-200">
-            <div className="w-12 h-12 bg-vermillion-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-vermillion-500 text-2xl">🛡️</span>
-            </div>
-            <h3 className="font-semibold text-lg text-dark-800 mb-2">Service Complet</h3>
-            <p className="text-dark-600">Accompagnement de A à Z pour votre import</p>
-          </div>
+      {/* JLPT Levels - Minimalist grid */}
+      <section className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32 border-t border-dark-200">
+        <div className="mb-16 text-center">
+          <h2 className="text-4xl lg:text-5xl font-light text-dark-900 mb-4">
+            JLPT Levels
+          </h2>
+          <p className="text-lg text-dark-600 font-light">
+            From basic to proficient
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 lg:gap-12">
+          {JLPT_LEVELS.map((level, index) => (
+            <Link
+              key={level.level}
+              href="/dashboard"
+              className="text-center group cursor-pointer hover:scale-105 transition-all duration-300 animate-fadeIn"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="text-6xl lg:text-7xl font-light text-dark-900 mb-4 tracking-tight transition-transform hover:scale-110">
+                {level.level}
+              </div>
+              <div className="text-2xl lg:text-3xl font-light text-dark-700 mb-2 transition-colors hover:text-dark-900">
+                {level.kanji} kanji + vocab
+              </div>
+              <div className="text-sm text-dark-500 mb-4 uppercase tracking-wide">
+                {level.description}
+              </div>
+              <span className="inline-block px-4 py-1.5 bg-dark-900 text-white text-xs font-medium tracking-wider uppercase animate-pulse-slow hover:scale-110 transition-transform">
+                Beta
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
+
+      {/* Mission Section */}
+      <section className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32 border-t border-dark-200">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-4xl lg:text-5xl font-light text-dark-900 mb-8">
+            For the Art of Learning
+          </h2>
+          <p className="text-lg lg:text-xl text-dark-600 font-light leading-relaxed">
+            We design learning experiences that feel just right, from the structure of each lesson 
+            to the science behind spaced repetition. Every detail is considered, from first concept to mastery.
+          </p>
+        </div>
+      </section>
+
+      {/* CTA Section - Minimalist */}
+      <section className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32 border-t border-dark-200">
+        <div className="text-center">
+          <h2 className="text-4xl lg:text-5xl font-light text-dark-900 mb-8">
+            Start Building Your Japanese Knowledge
+          </h2>
+          <p className="text-lg text-dark-600 mb-12 font-light max-w-2xl mx-auto">
+            Select your JLPT level, choose your pace, and begin your journey to Japanese mastery with kanji and vocabulary.
+          </p>
+          <Link href="/register">
+            <Button size="lg" className="px-10 py-5 text-lg">
+              Get Started
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      <Footer />
     </main>
   );
 }

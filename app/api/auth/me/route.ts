@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         email: true,
-        name: true,
+        username: true,
         role: true,
         subscription: {
           select: {
