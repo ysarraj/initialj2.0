@@ -347,6 +347,59 @@ export default function LessonPage() {
     }
   };
 
+  const goToNextLesson = useCallback(async () => {
+    if (!data) return;
+    const token = getAuthToken();
+    if (!token) return;
+
+    try {
+      const res = await fetch('/api/lessons', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch lessons');
+      }
+
+      const lessonData = await res.json();
+      const nextLesson = lessonData.lessons?.find(
+        (lesson: { level: number; id: string; isUnlocked: boolean; isAccessible: boolean }) =>
+          lesson.level === data.lesson.level + 1 && lesson.isUnlocked && lesson.isAccessible
+      );
+
+      if (nextLesson) {
+        router.push(`/lessons/${nextLesson.id}`);
+        return;
+      }
+
+      router.push('/dashboard');
+    } catch (err) {
+      router.push('/dashboard');
+    }
+  }, [data, router]);
+
+  useEffect(() => {
+    if (studyMode !== 'complete') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const hasMore = progress.learned < progress.total;
+        if (hasMore) {
+          continueLesson();
+        } else {
+          void goToNextLesson();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        router.push('/dashboard');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [studyMode, progress.learned, progress.total, continueLesson, goToNextLesson, router]);
+
   const checkAnswer = useCallback((answer: string, item: StudyItem, qType: QuestionType): boolean => {
     const userAns = answer.toLowerCase().trim();
     if (!userAns) return false;

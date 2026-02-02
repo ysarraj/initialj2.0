@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # Server configuration
 SSH_HOST="57-107201.ssh.hosting-ik.com"
-SSH_USER="fn8rsk_ysarraj"
+SSH_USER="9XfVMtBMXQG_ysarraj"
 DEPLOY_PATH="~/sites/initialj.com"
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════════╗${NC}"
