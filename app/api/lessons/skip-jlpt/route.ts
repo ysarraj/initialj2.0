@@ -110,10 +110,11 @@ export async function POST(request: NextRequest) {
         nextReviewAt: null,
       }));
 
-    const transactionQueries: Parameters<typeof prisma.$transaction>[0] = [];
+    // Execute updates and creates in parallel
+    const updatePromises: Promise<any>[] = [];
 
     if (kanjiIds.length) {
-      transactionQueries.push(
+      updatePromises.push(
         prisma.userKanjiProgress.updateMany({
           where: { userId: authUser.id, kanjiId: { in: kanjiIds } },
           data: { srsStage: 9, burnedAt: now, nextReviewAt: null, lastReviewedAt: now },
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (vocabIds.length) {
-      transactionQueries.push(
+      updatePromises.push(
         prisma.userVocabProgress.updateMany({
           where: { userId: authUser.id, vocabularyId: { in: vocabIds } },
           data: { srsStage: 9, burnedAt: now, nextReviewAt: null, lastReviewedAt: now },
@@ -131,15 +132,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (kanjiCreates.length) {
-      transactionQueries.push(prisma.userKanjiProgress.createMany({ data: kanjiCreates }));
+      updatePromises.push(prisma.userKanjiProgress.createMany({ data: kanjiCreates }));
     }
 
     if (vocabCreates.length) {
-      transactionQueries.push(prisma.userVocabProgress.createMany({ data: vocabCreates }));
+      updatePromises.push(prisma.userVocabProgress.createMany({ data: vocabCreates }));
     }
 
-    if (transactionQueries.length) {
-      await prisma.$transaction(transactionQueries);
+    if (updatePromises.length) {
+      await Promise.all(updatePromises);
     }
 
     const targetLesson = await prisma.kanjiLesson.findFirst({
