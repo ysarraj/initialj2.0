@@ -138,6 +138,47 @@ function katakanaToHiragana(str: string): string {
   });
 }
 
+function matchesKanaReading(answer: string, reading: string): boolean {
+  const cleanAnswer = answer.replace(/[.\s\-～〜]/g, '').toLowerCase();
+  const cleanReading = reading.replace(/[.\s\-～〜]/g, '').toLowerCase();
+  const hiraganaReading = katakanaToHiragana(cleanReading);
+
+  if (cleanReading === cleanAnswer || hiraganaReading === cleanAnswer) {
+    return true;
+  }
+
+  if (hiraganaReading.endsWith('ん')) {
+    const base = hiraganaReading.slice(0, -1);
+    if (cleanAnswer.endsWith('n') && cleanAnswer.slice(0, -1) === base) {
+      return true;
+    }
+    if (cleanAnswer.endsWith('ん') && cleanAnswer.slice(0, -1) === base) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function matchesRomajiReading(answer: string, reading: string): boolean {
+  const cleanAnswer = answer.toLowerCase().trim();
+  const cleanReading = reading.toLowerCase().trim();
+
+  if (cleanReading === cleanAnswer) {
+    return true;
+  }
+
+  if (cleanReading.endsWith('nn') && cleanAnswer.endsWith('n')) {
+    return cleanReading.slice(0, -2) === cleanAnswer.slice(0, -1);
+  }
+
+  if (cleanReading.endsWith('n') && cleanAnswer.endsWith('nn')) {
+    return cleanReading.slice(0, -1) === cleanAnswer.slice(0, -2);
+  }
+
+  return false;
+}
+
 const COMPLETION_MESSAGES = [
   { emoji: '🔥', text: "You're on fire!" },
   { emoji: '⭐', text: 'Star student!' },
@@ -441,14 +482,9 @@ export default function LessonPage() {
     } else {
       // For reading questions
       if (item.type === 'kanji') {
-        const cleanAnswer = userAns.replace(/[.\s\-～〜]/g, '');
         const kanjiItem = item as KanjiItem;
         const allReadings = [...kanjiItem.kunYomi, ...kanjiItem.onYomi];
-        return allReadings.some(r => {
-          const cleanReading = r.replace(/[.\s\-～〜]/g, '').toLowerCase();
-          const hiraganaReading = katakanaToHiragana(cleanReading);
-          return cleanReading === cleanAnswer || hiraganaReading === cleanAnswer;
-        });
+        return allReadings.some(r => matchesKanaReading(userAns, r));
       } else {
         // For vocab items (including hiragana/katakana)
         const vocabItem = item as VocabItem;
@@ -456,15 +492,10 @@ export default function LessonPage() {
         
         if (isKanaLesson) {
           // For kana lessons, reading field contains romaji, so compare romaji directly
-          const cleanAnswer = userAns.toLowerCase().trim();
-          const cleanReading = vocabItem.reading.toLowerCase().trim();
-          return cleanReading === cleanAnswer;
+          return matchesRomajiReading(userAns, vocabItem.reading);
         } else {
           // For regular vocab, compare kana readings
-          const cleanAnswer = userAns.replace(/[.\s\-～〜]/g, '');
-          const cleanReading = vocabItem.reading.replace(/[.\s\-～〜]/g, '').toLowerCase();
-          const hiraganaReading = katakanaToHiragana(cleanReading);
-          return cleanReading === cleanAnswer || hiraganaReading === cleanAnswer;
+          return matchesKanaReading(userAns, vocabItem.reading);
         }
       }
     }
