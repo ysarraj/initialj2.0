@@ -400,6 +400,27 @@ export default function LessonPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [studyMode, progress.learned, progress.total, continueLesson, goToNextLesson, router]);
 
+  useEffect(() => {
+    if (studyMode !== 'overview') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (progress.learned === 0) {
+          void startLesson();
+        } else {
+          continueLesson();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        router.push('/dashboard');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [studyMode, progress.learned, startLesson, continueLesson, router]);
+
   const checkAnswer = useCallback((answer: string, item: StudyItem, qType: QuestionType): boolean => {
     const userAns = answer.toLowerCase().trim();
     if (!userAns) return false;
