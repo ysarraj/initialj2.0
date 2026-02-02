@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import Link from 'next/link';
@@ -83,54 +83,104 @@ const STAGE_COLORS: Record<number, string> = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllLevels, setShowAllLevels] = useState(false);
   const [selectedJlpt, setSelectedJlpt] = useState<number | null>(null);
+  const [skippingJlpt, setSkippingJlpt] = useState<number | null>(null);
 
   const getAuthToken = () => {
     if (typeof window === 'undefined') return null;
     return localStorage.getItem('auth_token');
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const token = getAuthToken();
-      if (!token) {
-        router.push('/login');
-        return;
+  const fetchData = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const [progressRes, lessonsRes] = await Promise.all([
+        fetch('/api/progress', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch('/api/lessons', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      if (!progressRes.ok || !lessonsRes.ok) {
+        throw new Error('Failed to fetch data');
       }
 
-      try {
-        const [progressRes, lessonsRes] = await Promise.all([
-          fetch('/api/progress', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch('/api/lessons', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+      const progressData = await progressRes.json();
+      const lessonsData = await lessonsRes.json();
 
-        if (!progressRes.ok || !lessonsRes.ok) {
-          throw new Error('Failed to fetch data');
-        }
-
-        const progressData = await progressRes.json();
-        const lessonsData = await lessonsRes.json();
-
-        setProgress(progressData);
-        setLessons(lessonsData.lessons);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+      setProgress(progressData);
+      setLessons(lessonsData.lessons);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const jlptParam = searchParams?.get('jlpt');
+    if (!jlptParam) return;
+    const parsed = Number(jlptParam);
+    if ([1, 2, 3, 4, 5].includes(parsed)) {
+      setSelectedJlpt(parsed);
+    }
+  }, [searchParams]);
+
+  const skipToJlpt = async (jlpt: number) => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const confirmSkip = window.confirm(
+      `Skip to N${jlpt}? This will burn all previous levels.`
+    );
+    if (!confirmSkip) return;
+
+    setSkippingJlpt(jlpt);
+    try {
+      const res = await fetch('/api/lessons/skip-jlpt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ targetJlpt: jlpt }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to skip levels');
+      }
+
+      await fetchData();
+      if (data.targetLessonId) {
+        router.push(`/lessons/${data.targetLessonId}`);
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to skip levels';
+      setError(message);
+    } finally {
+      setSkippingJlpt(null);
+    }
+  };
 
   const formatNextReview = (dateStr: string | null) => {
     if (!dateStr) return 'No upcoming reviews';
@@ -301,12 +351,12 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-8 border-b border-dark-200 pb-4">
           <h2 className="text-2xl font-light text-dark-900 uppercase tracking-wide">Levels</h2>
           {/* JLPT Filter */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {[null, 5, 4, 3, 2, 1].map((jlpt) => (
               <button
                 key={jlpt ?? 'all'}
                 onClick={() => setSelectedJlpt(jlpt)}
-                className={`px-4 py-1.5 text-xs font-light uppercase tracking-wide transition-all duration-200 hover:scale-110 active:scale-95 ${
+                className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-light uppercase tracking-wide transition-all duration-200 hover:scale-110 active:scale-95 whitespace-nowrap ${
                   selectedJlpt === jlpt
                     ? 'bg-dark-900 text-white animate-pulse-slow shadow-lg'
                     : 'bg-white border border-dark-200 text-dark-600 hover:border-dark-900 hover:shadow-md'
@@ -340,6 +390,12 @@ export default function DashboardPage() {
             return displayLessons.map((lesson, index) => {
               const isCurrentLevel = lesson.isUnlocked && !lesson.isComplete &&
                 (index === 0 || lessons[index - 1]?.isComplete);
+              const jlptTarget =
+                lesson.level === 11 ? 4 :
+                lesson.level === 26 ? 3 :
+                lesson.level === 51 ? 2 :
+                lesson.level === 76 ? 1 :
+                null;
 
               return (
                 <div
@@ -375,6 +431,22 @@ export default function DashboardPage() {
                       </span>
                       {lesson.isComplete && <span className="text-dark-900 text-xl">—</span>}
                     </div>
+                    {jlptTarget && lesson.isAccessible && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void skipToJlpt(jlptTarget);
+                        }}
+                        disabled={skippingJlpt === jlptTarget}
+                        className={`text-[10px] uppercase tracking-wide px-2 py-1 border transition-all ${
+                          skippingJlpt === jlptTarget
+                            ? 'bg-dark-900 text-white border-dark-900 opacity-70'
+                            : 'bg-white border-dark-200 text-dark-600 hover:border-dark-900 hover:shadow-md'
+                        }`}
+                      >
+                        {skippingJlpt === jlptTarget ? `Skipping N${jlptTarget}...` : `Skip to N${jlptTarget}`}
+                      </button>
+                    )}
                     {!lesson.isUnlocked && (
                       <span className="text-dark-400 font-light">Locked</span>
                     )}

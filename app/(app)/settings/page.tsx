@@ -36,6 +36,9 @@ export default function SettingsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const getAuthToken = () => {
@@ -60,6 +63,7 @@ export default function SettingsPage() {
 
         const data = await res.json();
         setUser(data.user);
+        setUsernameInput(data.user?.username || '');
 
         // Load settings from localStorage for now
         const savedSettings = localStorage.getItem('initialj_settings');
@@ -75,6 +79,65 @@ export default function SettingsPage() {
 
     fetchData();
   }, [router]);
+
+  const saveUsername = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    setSavingUsername(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/user/username', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ username: usernameInput }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update username');
+      }
+
+      setUser(prev => prev ? { ...prev, username: data.username } : prev);
+      setMessage({ type: 'success', text: 'Username updated' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to update username' });
+    } finally {
+      setSavingUsername(false);
+    }
+  };
+
+  const resetProgress = async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const confirmed = confirm('Are you sure you want to reset all progress? This cannot be undone.');
+    if (!confirmed) return;
+
+    setResetting(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch('/api/user/reset-progress', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to reset progress');
+      }
+      setMessage({ type: 'success', text: 'Progress reset. You can start fresh.' });
+      setTimeout(() => router.push('/dashboard'), 500);
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to reset progress' });
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const saveSettings = () => {
     setSaving(true);
@@ -142,10 +205,20 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <Input
-              value={user?.username || ''}
-              disabled
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value)}
+              placeholder="Your username"
               fullWidth
             />
+            <div className="mt-2 flex items-center justify-end">
+              <Button
+                variant="secondary"
+                onClick={saveUsername}
+                disabled={savingUsername}
+              >
+                {savingUsername ? 'Saving...' : 'Save Username'}
+              </Button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -299,14 +372,10 @@ export default function SettingsPage() {
             </p>
             <Button
               variant="secondary"
-              onClick={() => {
-                if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
-                  // TODO: Implement progress reset
-                  setMessage({ type: 'success', text: 'Progress reset (not yet implemented)' });
-                }
-              }}
+              onClick={resetProgress}
+              disabled={resetting}
             >
-              Reset All Progress
+              {resetting ? 'Resetting...' : 'Reset All Progress'}
             </Button>
           </div>
         </div>

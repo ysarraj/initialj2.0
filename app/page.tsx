@@ -53,7 +53,7 @@ export default function HomePage() {
     if (isLoggedIn) {
       router.push('/dashboard');
     } else {
-      router.push('/register');
+      router.push('/preview');
     }
   };
 
@@ -113,7 +113,7 @@ export default function HomePage() {
           {JLPT_LEVELS.map((level, index) => (
             <Link
               key={level.level}
-              href="/dashboard"
+              href={level.level === 'N5' ? '/dashboard' : `/dashboard?jlpt=${level.level.replace('N', '')}`}
               className="text-center group cursor-pointer hover:scale-105 transition-all duration-300 animate-fadeIn"
               style={{ animationDelay: `${index * 0.1}s` }}
             >

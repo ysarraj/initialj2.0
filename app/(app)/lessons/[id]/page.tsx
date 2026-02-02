@@ -1080,7 +1080,7 @@ export default function LessonPage() {
                 </div>
               ) : (
                 <div className="w-full max-w-sm">
-                  {showHint && (
+                  {showHint && !isKanaLesson && (
                     <div className="mb-4 p-3 bg-blue-50 rounded-xl animate-fadeIn">
                       {questionType === 'meaning' ? (
                         isKanji && kanjiItem ? (
@@ -1153,14 +1153,16 @@ export default function LessonPage() {
                     <div className="mt-2 text-sm text-red-500 text-center">Try again!</div>
                   )}
                   <div className="mt-4 flex items-center justify-center gap-3">
-                    <button
-                      onClick={toggleHint}
-                      className={`text-xs px-3 py-1 rounded-full transition-colors ${
-                        showHint ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                    >
-                      Hint (1)
-                    </button>
+                    {!isKanaLesson && (
+                      <button
+                        onClick={toggleHint}
+                        className={`text-xs px-3 py-1 rounded-full transition-colors ${
+                          showHint ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        Hint (1)
+                      </button>
+                    )}
                     <button
                       onClick={revealAnswer}
                       className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
@@ -1196,7 +1198,9 @@ export default function LessonPage() {
 
         <div className="flex justify-center gap-3 text-xs text-gray-400 flex-wrap">
           <span><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Enter</kbd> submit/next</span>
-          <span><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">1</kbd> hint</span>
+          {!isKanaLesson && (
+            <span><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">1</kbd> hint</span>
+          )}
           <span><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">2</kbd> reveal</span>
           <span><kbd className="px-1.5 py-0.5 bg-amber-100 rounded text-[10px]">3</kbd> burn</span>
           <span><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">Esc</kbd> exit</span>
