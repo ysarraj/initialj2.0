@@ -51,6 +51,13 @@ function RegisterForm() {
         throw new Error(data.error || 'Failed to register');
       }
 
+      // Check if email verification was skipped (SMTP failure fallback)
+      if (data.skipVerification) {
+        // User was created without email verification - redirect to login
+        router.push('/login?registered=true');
+        return;
+      }
+
       // Code sent successfully
       setCodeSent(true);
     } catch (err) {

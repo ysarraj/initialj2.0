@@ -86,14 +86,37 @@ export async function POST(request: NextRequest) {
     const emailSent = await emailService.sendVerificationCode(emailLower, code);
 
     if (!emailSent) {
-      // Clean up verification code if email failed
+      // Email failed - create user directly without verification (fallback for SMTP issues)
+      console.warn('[Registration] Email sending failed, creating user without verification');
+      
+      // Clean up verification code since we're bypassing verification
       await prisma.verificationCode.deleteMany({
         where: { email: emailLower },
       });
-      return NextResponse.json(
-        { error: 'Failed to send verification email. Please try again.' },
-        { status: 500 }
-      );
+      
+      // Create the user directly
+      const user = await prisma.user.create({
+        data: {
+          email: emailLower,
+          password: hashedPassword,
+          username: username || null,
+          emailVerified: true, // Auto-verify since we can't send email
+          settings: {
+            create: {
+              currentLevel: 1,
+            },
+          },
+        },
+      });
+      
+      // Try to send welcome email (non-blocking)
+      emailService.sendWelcomeEmail(emailLower, username || null).catch(() => {});
+      
+      return NextResponse.json({
+        message: 'Account created successfully',
+        email: emailLower,
+        skipVerification: true, // Tell frontend to skip verification step
+      });
     }
 
     return NextResponse.json({
