@@ -505,16 +505,12 @@ export default function LessonPage() {
           ? (newFirstAttempt.has(meaningKey) && newFirstAttempt.has(readingKey))
           : newFirstAttempt.has(meaningKey);
 
-      const questionCount = hasReadingQuestion ? 2 : 1;
+      const questionCount = isKanaLesson ? 1 : (hasReadingQuestion && hasMeaningQuestion ? 2 : 1);
       await markItemStudied(currentItem, allQuestionsFirstAttempt, questionCount);
       setStreak(prev => prev + 1);
 
-      // Only add XP if NOT shortcutted (firstAttemptCorrect = false)
-      // Shortcutted items don't get XP - they need to be reviewed first
-      if (!allQuestionsFirstAttempt) {
-        // Give 10 XP per learning question (meaning and/or reading)
-        setXpEarned(prev => prev + questionCount * 10);
-      }
+      // Always give XP for learning items - 10 XP per question answered
+      setXpEarned(prev => prev + questionCount * 10);
     }
     setShowMeaning(false);
     setShowReading(false);
@@ -884,6 +880,7 @@ export default function LessonPage() {
     const isKanji = currentItem.type === 'kanji';
     const kanjiItem = isKanji ? (currentItem as KanjiItem & { type: 'kanji' }) : null;
     const vocabItem = !isKanji ? (currentItem as VocabItem & { type: 'vocab' }) : null;
+    const isKanaLesson = data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA';
 
     return (
       <div className="max-w-2xl mx-auto space-y-4">
@@ -1018,13 +1015,16 @@ export default function LessonPage() {
                   <input
                     ref={inputRef}
                     type="text"
-                    value={questionType === 'reading' ? userAnswer : rawInput}
+                    value={questionType === 'reading' ? (isKanaLesson ? rawInput : userAnswer) : rawInput}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (questionType === 'reading') {
+                      const isKana = data?.lesson.lessonType === 'HIRAGANA' || data?.lesson.lessonType === 'KATAKANA';
+                      if (questionType === 'reading' && !isKana) {
+                        // For regular lessons, convert romaji to hiragana
                         setRawInput(value);
                         setUserAnswer(romajiToHiragana(value));
                       } else {
+                        // For kana lessons reading or any meaning questions, keep as-is
                         setRawInput(value);
                         setUserAnswer(value);
                       }

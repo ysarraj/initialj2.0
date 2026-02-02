@@ -5,19 +5,6 @@ import { canAccessLevel, getUserWithSubscription } from '@/src/lib/access';
 import { SRS_INTERVALS, SRS_STAGE_NAMES } from '@/src/lib/srs';
 import { addKanjiXP, addVocabXP } from '@/src/lib/weekly-xp-service';
 
-const SRS_STAGE_NAMES = {
-  0: 'Locked',
-  1: 'Apprentice 1',
-  2: 'Apprentice 2',
-  3: 'Apprentice 3',
-  4: 'Apprentice 4',
-  5: 'Guru 1',
-  6: 'Guru 2',
-  7: 'Master',
-  8: 'Enlightened',
-  9: 'Burned',
-};
-
 // Helper to parse JSON fields
 const parseJsonField = (value: unknown): unknown => {
   if (value === null) return null;
