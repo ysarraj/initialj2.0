@@ -94,13 +94,12 @@ export async function POST(request: NextRequest) {
         where: { email: emailLower },
       });
       
-      // Create the user directly
+      // Create the user directly (no email verification required)
       const user = await prisma.user.create({
         data: {
           email: emailLower,
           password: hashedPassword,
           username: username || null,
-          emailVerified: true, // Auto-verify since we can't send email
           settings: {
             create: {
               currentLevel: 1,
