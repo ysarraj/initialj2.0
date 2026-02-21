@@ -1,8 +1,27 @@
 import Stripe from 'stripe';
 
-// Server-side Stripe instance
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2026-01-28.clover',
+// Lazy-load Stripe instance to avoid crashes when API key is not configured
+let _stripe: Stripe | null = null;
+
+function getStripeInstance(): Stripe {
+  if (!_stripe) {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) {
+      throw new Error('STRIPE_SECRET_KEY is not configured');
+    }
+    _stripe = new Stripe(apiKey, {
+      apiVersion: '2026-01-28.clover',
+    });
+  }
+  return _stripe;
+}
+
+// Export getter for stripe instance
+export const stripe = new Proxy({} as Stripe, {
+  get: (_, prop) => {
+    const instance = getStripeInstance();
+    return (instance as any)[prop];
+  },
 });
 
 // Price IDs from environment
