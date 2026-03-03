@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Card from '@/src/components/ui/Card';
+import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
 import { getWeekEnd } from '@/src/lib/weekly-xp';
+import { useProtectedFetch } from '@/src/hooks/useProtectedFetch';
 
 interface LeaderboardEntry {
   userId: string;
@@ -23,9 +24,7 @@ interface LeaderboardData {
 }
 
 export default function LeaderboardPage() {
-  const router = useRouter();
-  const [data, setData] = useState<LeaderboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, loading } = useProtectedFetch<LeaderboardData>('/api/leaderboard');
   const [timeRemaining, setTimeRemaining] = useState<string>('');
 
   // Calculate time remaining until week end
@@ -62,37 +61,6 @@ export default function LeaderboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/leaderboard', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error('Failed to fetch leaderboard');
-        }
-
-        const leaderboardData = await res.json();
-        setData(leaderboardData);
-      } catch (error) {
-        console.error('Error fetching leaderboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
-  }, [router]);
-
   const formatXP = (xp: number): string => {
     return new Intl.NumberFormat('en-US').format(xp);
   };
@@ -104,13 +72,7 @@ export default function LeaderboardPage() {
     return `${rank}.`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-900" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
 
   if (!data) {
     return (

@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
+import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
+import ErrorDisplay from '@/src/components/ui/ErrorDisplay';
+import Modal from '@/src/components/ui/Modal';
+import { getAuthToken } from '@/src/lib/client-auth';
+import { formatDate } from '@/src/lib/utils';
 
 interface BurnedItem {
   type: 'kanji' | 'vocab';
@@ -39,11 +44,6 @@ export default function BurnedPage() {
   const [filter, setFilter] = useState<'all' | 'kanji' | 'vocab'>('all');
   const [unburning, setUnburning] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<BurnedItem | null>(null);
-
-  const getAuthToken = () => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('auth_token');
-  };
 
   const fetchData = async () => {
     const token = getAuthToken();
@@ -99,16 +99,6 @@ export default function BurnedPage() {
     }
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'Unknown';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
   const getAccuracy = (item: BurnedItem) => {
     const correct = item.meaningCorrect + item.readingCorrect;
     const total = correct + item.meaningIncorrect + item.readingIncorrect;
@@ -116,22 +106,8 @@ export default function BurnedPage() {
     return Math.round((correct / total) * 100);
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error}</p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay message={error} onRetry={() => window.location.reload()} />;
 
   const filteredItems = data?.items.filter(item => {
     if (filter === 'all') return true;
@@ -215,13 +191,9 @@ export default function BurnedPage() {
       )}
 
       {/* Detail Modal */}
-      {selectedItem && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => setSelectedItem(null)}
-        >
-          <div onClick={(e) => e.stopPropagation()}>
-            <Card className="max-w-md w-full p-6">
+      <Modal isOpen={!!selectedItem} onClose={() => setSelectedItem(null)}>
+        {selectedItem && (
+          <Card className="max-w-md w-full p-6">
               {/* Character */}
               <div className="text-center mb-4">
                 <div className="text-6xl font-japanese mb-2">
@@ -310,9 +282,8 @@ export default function BurnedPage() {
                 Unburning resets to Apprentice 1 for review
               </div>
             </Card>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       <style jsx global>{`
         .font-japanese {

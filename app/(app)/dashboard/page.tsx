@@ -4,7 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
+import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
+import ErrorDisplay from '@/src/components/ui/ErrorDisplay';
+import StatCard from '@/src/components/ui/StatCard';
 import Link from 'next/link';
+import { getAuthToken } from '@/src/lib/client-auth';
 
 /**
  * Get current day of week in CET (Central European Time)
@@ -91,11 +95,6 @@ export default function DashboardPage() {
   const [showAllLevels, setShowAllLevels] = useState(false);
   const [selectedJlpt, setSelectedJlpt] = useState<number | null>(null);
   const [skippingJlpt, setSkippingJlpt] = useState<number | null>(null);
-
-  const getAuthToken = () => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('auth_token');
-  };
 
   const fetchData = useCallback(async () => {
     const token = getAuthToken();
@@ -200,22 +199,8 @@ export default function DashboardPage() {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-red-600 mb-4">{error}</p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorDisplay message={error} onRetry={() => window.location.reload()} />;
 
   return (
     <div className="space-y-12">
@@ -257,28 +242,35 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       {progress && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <Card className="text-center p-6 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fadeIn">
-            <div className="text-4xl lg:text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.learned.kanji}</div>
-            <div className="text-sm text-dark-600 font-light uppercase tracking-wide mb-1">Kanji Learned</div>
-            <div className="text-xs text-dark-400 font-light">of {progress.totals.kanji}</div>
-          </Card>
-          <Card className="text-center p-6 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fadeIn" style={{ animationDelay: '0.1s' }}>
-            <div className="text-4xl lg:text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.learned.vocab}</div>
-            <div className="text-sm text-dark-600 font-light uppercase tracking-wide mb-1">Vocabulary</div>
-            <div className="text-xs text-dark-400 font-light">of {progress.totals.vocab}</div>
-          </Card>
+          <StatCard
+            value={progress.learned.kanji}
+            label="Kanji Learned"
+            subtitle={`of ${progress.totals.kanji}`}
+          />
+          <StatCard
+            value={progress.learned.vocab}
+            label="Vocabulary"
+            subtitle={`of ${progress.totals.vocab}`}
+            animationDelay="0.1s"
+          />
           <Link href="/burned" className="block">
-            <Card className="text-center p-6 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105 animate-fadeIn" style={{ animationDelay: '0.2s', borderColor: STAGE_COLORS[9] }}>
-              <div className="text-4xl lg:text-5xl font-light mb-2 transition-transform hover:scale-110" style={{ color: STAGE_COLORS[9] }}>{progress.burned.kanji + progress.burned.vocab}</div>
-              <div className="text-sm font-light uppercase tracking-wide mb-1" style={{ color: STAGE_COLORS[9] }}>Burned</div>
-              <div className="text-xs text-dark-400 font-light">Click to manage</div>
-            </Card>
+            <StatCard
+              value={progress.burned.kanji + progress.burned.vocab}
+              label="Burned"
+              subtitle="Click to manage"
+              valueColor=""
+              labelColor=""
+              animationDelay="0.2s"
+              className="cursor-pointer hover:shadow-lg"
+              style={{ borderColor: STAGE_COLORS[9], color: STAGE_COLORS[9] }}
+            />
           </Link>
-          <Card className="text-center p-6 hover:border-dark-900 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fadeIn" style={{ animationDelay: '0.3s' }}>
-            <div className="text-4xl lg:text-5xl font-light text-dark-900 mb-2 transition-transform hover:scale-110">{progress.accuracy}%</div>
-            <div className="text-sm text-dark-600 font-light uppercase tracking-wide mb-1">Accuracy</div>
-            <div className="text-xs text-dark-400 font-light">Overall score</div>
-          </Card>
+          <StatCard
+            value={`${progress.accuracy}%`}
+            label="Accuracy"
+            subtitle="Overall score"
+            animationDelay="0.3s"
+          />
         </div>
       )}
 

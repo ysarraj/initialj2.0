@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/src/components/ui/Card';
 import Button from '@/src/components/ui/Button';
+import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
+import PageHeader from '@/src/components/ui/PageHeader';
 import { getDisplayUsername } from '@/src/lib/username';
+import { getAuthToken } from '@/src/lib/client-auth';
+import { formatDate } from '@/src/lib/utils';
 
 interface User {
   id: string;
@@ -31,7 +35,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('auth_token');
+      const token = getAuthToken();
       if (!token) {
         router.push('/login');
         return;
@@ -76,16 +80,8 @@ export default function AdminUsersPage() {
     checkAuth();
   }, [router]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
   const toggleUsernameVisibility = async (userId: string, currentHidden: boolean) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getAuthToken();
     if (!token) return;
 
     try {
@@ -103,12 +99,12 @@ export default function AdminUsersPage() {
       }
 
       // Refresh users list
-      const usersRes = await fetch('/api/admin/users', {
+      const refreshRes = await fetch('/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
+      if (refreshRes.ok) {
+        const usersData = await refreshRes.json();
         setUsers(usersData.users);
       }
     } catch (error) {
@@ -116,24 +112,13 @@ export default function AdminUsersPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-900" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner fullPage />;
 
   return (
     <div>
-        <div className="mb-8">
-          <h1 className="text-4xl lg:text-5xl font-light text-dark-900 mb-2">
-            All Users
-          </h1>
-          <p className="text-lg text-dark-600 font-light">
-            Manage all user accounts
-          </p>
-        </div>
+      <div className="mb-8">
+        <PageHeader title="All Users" subtitle="Manage all user accounts" />
+      </div>
 
         <Card className="p-8">
           <div className="overflow-x-auto">

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Logo from '@/src/components/layout/Logo';
 
 export default function Footer() {
   return (
@@ -80,25 +81,8 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-dark-200 pt-8 flex flex-col md:flex-row items-center justify-between">
-          <div className="flex items-center space-x-3 mb-4 md:mb-0">
-            <div 
-              className="w-8 h-8 rounded-sm flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #1F2922 0%, #C73E1D 100%)' }}
-            >
-              <span className="text-white font-light text-lg">J</span>
-            </div>
-            <span 
-              className="text-lg font-light tracking-tight bg-clip-text text-transparent"
-              style={{ 
-                backgroundImage: 'linear-gradient(135deg, #1F2922 0%, #C73E1D 50%, #1F2922 100%)',
-                backgroundSize: '200% 200%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: 'gradient-animate 3s ease infinite'
-              }}
-            >
-              InitialJ
-            </span>
+          <div className="mb-4 md:mb-0">
+            <Logo size="sm" />
           </div>
           <div className="text-sm text-dark-500 font-light">
             © {new Date().getFullYear()} InitialJ by{' '}

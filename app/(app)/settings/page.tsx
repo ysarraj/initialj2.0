@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import Button from '@/src/components/ui/Button';
 import Card from '@/src/components/ui/Card';
 import Input from '@/src/components/ui/Input';
+import LoadingSpinner from '@/src/components/ui/LoadingSpinner';
+import AlertMessage from '@/src/components/ui/AlertMessage';
+import Toggle from '@/src/components/ui/Toggle';
+import { getAuthToken } from '@/src/lib/client-auth';
 
 interface User {
   id: string;
@@ -40,11 +44,6 @@ export default function SettingsPage() {
   const [resetting, setResetting] = useState(false);
   const [usernameInput, setUsernameInput] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const getAuthToken = () => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('auth_token');
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -152,24 +151,7 @@ export default function SettingsPage() {
     }
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingSpinner />;
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -181,13 +163,8 @@ export default function SettingsPage() {
         <p className="text-gray-600 text-sm">Manage your account and preferences</p>
       </div>
 
-      {/* Message */}
       {message && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-        }`}>
-          {message.text}
-        </div>
+        <AlertMessage type={message.type} message={message.text} />
       )}
 
       {/* Account Section */}
@@ -286,43 +263,22 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          <div className="flex items-center justify-between py-3 border-b">
-            <div>
-              <div className="font-medium text-gray-900">Show Romaji Hints</div>
-              <div className="text-sm text-gray-500">Display romaji under hiragana readings</div>
-            </div>
-            <button
-              onClick={() => setSettings({ ...settings, showRomaji: !settings.showRomaji })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.showRomaji ? 'bg-pink-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.showRomaji ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
+          <Toggle
+            label="Show Romaji Hints"
+            description="Display romaji under hiragana readings"
+            checked={settings.showRomaji}
+            onChange={(checked) => setSettings({ ...settings, showRomaji: checked })}
+            activeColor="bg-pink-500"
+            hasBorder
+          />
 
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <div className="font-medium text-gray-900">Auto-play Audio</div>
-              <div className="text-sm text-gray-500">Automatically play pronunciation audio</div>
-            </div>
-            <button
-              onClick={() => setSettings({ ...settings, autoplayAudio: !settings.autoplayAudio })}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.autoplayAudio ? 'bg-pink-500' : 'bg-gray-300'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  settings.autoplayAudio ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </div>
+          <Toggle
+            label="Auto-play Audio"
+            description="Automatically play pronunciation audio"
+            checked={settings.autoplayAudio}
+            onChange={(checked) => setSettings({ ...settings, autoplayAudio: checked })}
+            activeColor="bg-pink-500"
+          />
 
           <Button onClick={saveSettings} disabled={saving} fullWidth>
             {saving ? 'Saving...' : 'Save Preferences'}

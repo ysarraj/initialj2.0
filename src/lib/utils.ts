@@ -12,11 +12,12 @@ export function formatPrice(price: number, currency: string = 'EUR'): string {
   }).format(price);
 }
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string | null, style: 'long' | 'short' = 'short'): string {
+  if (!date) return '—';
   const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('fr-FR', {
+  return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: style === 'long' ? 'long' : 'short',
     day: 'numeric',
   }).format(d);
 }

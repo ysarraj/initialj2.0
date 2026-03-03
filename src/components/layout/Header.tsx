@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Button from '@/src/components/ui/Button';
+import Logo from '@/src/components/layout/Logo';
 import { useState, useEffect } from 'react';
+import { getAuthToken } from '@/src/lib/client-auth';
 
 interface User {
   id: string;
@@ -33,7 +35,7 @@ export default function Header({ user: propUser = null, onLogout: propOnLogout }
     }
 
     const checkAuth = async () => {
-      const token = localStorage.getItem('auth_token');
+      const token = getAuthToken();
       if (!token) {
         setLoading(false);
         return;
@@ -62,7 +64,7 @@ export default function Header({ user: propUser = null, onLogout: propOnLogout }
     if (propOnLogout) {
       propOnLogout();
     } else {
-      localStorage.removeItem('auth_token');
+      if (typeof window !== 'undefined') localStorage.removeItem('auth_token');
       router.push('/');
       setUser(null);
     }
@@ -85,25 +87,8 @@ export default function Header({ user: propUser = null, onLogout: propOnLogout }
       <nav className="max-w-[1400px] mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div 
-              className="w-10 h-10 rounded-sm flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-lg"
-              style={{ background: 'linear-gradient(135deg, #1F2922 0%, #C73E1D 100%)' }}
-            >
-              <span className="text-white font-light text-xl transition-transform group-hover:scale-110">J</span>
-            </div>
-            <span 
-              className="text-xl font-light tracking-tight transition-all duration-200 group-hover:scale-105 bg-clip-text text-transparent"
-              style={{ 
-                backgroundImage: 'linear-gradient(135deg, #1F2922 0%, #C73E1D 50%, #1F2922 100%)',
-                backgroundSize: '200% 200%',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: 'gradient-animate 3s ease infinite'
-              }}
-            >
-              InitialJ
-            </span>
+          <Link href="/">
+            <Logo />
           </Link>
 
           {/* Desktop Navigation */}
